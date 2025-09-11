@@ -309,6 +309,29 @@ const questions = [
     { t:"아무도 없는 곳에서 조용히 산다.", v:{D1:-3,D2:-2,D3:0,D4:-2,D5:-3} }
   ]}
 ];
+  // [질문 배열 바로 아래에 추가]
+const dims = ['D1','D2','D3','D4','D5'];
+const SENSITIVITY = 1.2; // 1.0~1.5 권장. 높일수록 작은 차이에도 결과가 바뀜
+
+function computeDimRanges(){
+  const r = {D1:0,D2:0,D3:0,D4:0,D5:0};
+  questions.forEach(q=>{
+    const mins = {D1:Infinity,D2:Infinity,D3:Infinity,D4:Infinity,D5:Infinity};
+    const maxs = {D1:-Infinity,D2:-Infinity,D3:-Infinity,D4:-Infinity,D5:-Infinity};
+    q.a.forEach(opt=>{
+      dims.forEach(d=>{
+        const v = opt.v[d]||0;
+        if(v<mins[d]) mins[d]=v;
+        if(v>maxs[d]) maxs[d]=v;
+      });
+    });
+    dims.forEach(d=>{ r[d] += Math.abs((maxs[d]-mins[d])||0); });
+  });
+  dims.forEach(d=>{ if(r[d]===0) r[d]=1; });
+  return r;
+}
+const DIM_RANGE = computeDimRanges();
+
 // ============== 결과 데이터(이미지/타이틀/설명) ==============
 // 각 main은 고유 문구로 수정, 이미지 링크는 사용자가 준 주소 사용
 const results = {
@@ -634,44 +657,98 @@ function selectAnswer(delta){
 }
 
 // 표준화 + 혼합 유사도(코사인 60% + 거리 40%)
-function calculateResult(){
-  // 표준화
-  const dims=['D1','D2','D3','D4','D5'];
-  const maxAbs=35; // 질문 20개 * 최대 기여치 범위 근사
-  const S = dims.map(d => scores[d]/maxAbs); // [-1,1] 근사
-  const sNorm = Math.hypot(...S) || 1;
-
-  let bestKey=null, bestScore=-Infinity;
-  for(const key in profiles){
-    const p = dims.map(d => profiles[key][d]/10); // 프로필 [-1,1] 스케일
-    const pNorm = Math.hypot(...p)||1;
-    // 코사인 유사도
-    const cos = (S.reduce((a,v,i)=>a+v*(p[i]),0))/(sNorm*pNorm);
-    // 유클리드 거리(가까울수록 좋음) → 점수화
-    const dist = Math.hypot(...S.map((v,i)=>v-p[i]));
-    const score = 0.6*cos + 0.4*(1 - dist/Math.sqrt(5*4)); // 5차원, 최대거리≈2
-    if(score>bestScore){ bestScore=score; bestKey=key; }
-  }
-  showResult(bestKey);
+// 답안 패턴을 기반으로 "결정성 있는 난수"를 만들어주는 함수
+function seededRandomFromScores(){ 
+  let h = 0x811c9dc5;
+  ['D1','D2','D3','D4','D5'].forEach(d=>{
+    let x = Math.round((scores[d]+200)*7);
+    h ^= x; h = Math.imul(h, 0x01000193);
+  });
+  return (h>>>0)/4294967296;
 }
 
-function showResult(key){
-  lastResultKey = key;
-  const R = results[key];
-  switchScreen('result');
+// 사용자의 점수를 차원별로 정규화된 벡터로 바꿔주는 함수
+function calcScoreVec(){
+  return ['D1','D2','D3','D4','D5'].map(d => (scores[d] / DIM_RANGE[d]) * SENSITIVITY);
+}
 
-  resultImage.src = R.image;
-  resultName.textContent = R.name;
-  resultMainTrait.textContent = R.main;
-  resultSubTrait.textContent = R.sub;
-  resultDescription.textContent = R.desc;
+  // [calculateResult 위쪽 아무데나] — 헬퍼
+function seededRandomFromScores(){ // 답안 패턴 기반 결정성 난수
+  let h = 0x811c9dc5; // FNV-1a
+  ['D1','D2','D3','D4','D5'].forEach(d=>{
+    let x = Math.round((scores[d]+200)*7);
+    h ^= x; h = Math.imul(h, 0x01000193);
+  });
+  return (h>>>0)/4294967296;
+}
+function calcScoreVec(){
+  // dims/SENSITIVITY/DIM_RANGE는 ①에서 이미 선언된 상태여야 함
+  return ['D1','D2','D3','D4','D5'].map(d => (scores[d] / DIM_RANGE[d]) * SENSITIVITY);
+}
+
+// [기존 calculateResult() 전체 교체]
+function calculateResult() {
+  // ─ profiles는 기존에 쓰던 그대로 두셔도 됩니다.
+  const profiles = {
+    rengoku:   { D1: 8,  D2: 6,  D3: 5,  D4: 8,  D5: 7  },
+    mitsuri:   { D1: 7,  D2: 10, D3: -4, D4: 9,  D5: 2  },
+    himejima:  { D1: 10, D2: 8,  D3: 8,  D4: 2,  D5: -6 },
+    tanjiro:   { D1: 9,  D2: 9,  D3: 2,  D4: 10, D5: 0  },
+    sanemi:    { D1: 4,  D2: -8, D3: 6,  D4: -6, D5: 8  },
+    shinobu:   { D1: 2,  D2: -9, D3: 9,  D4: -5, D5: 4  },
+    giyu:      { D1: 3,  D2: -7, D3: 7,  D4: -8, D5: -3 },
+    uzui:      { D1: 1,  D2: 5,  D3: -8, D4: 6,  D5: 6  },
+    muichiro:  { D1: -5, D2: -5, D3: -2, D4: -4, D5: 3  },
+    iguro:     { D1: 2,  D2: -8, D3: 10, D4: -7, D5: 1  },
+    nezuko:    { D1: 8,  D2: 7,  D3: -6, D4: 5,  D5: -7 },
+    kokushibo: { D1: -8, D2: -6, D3: 9,  D4: -9, D5: 9  },
+    akaza:     { D1: -6, D2: -4, D3: 6,  D4: -3, D5: 10 },
+    doma:      { D1: -10,D2: 4,  D3: -7, D4: 3,  D5: -5 },
+    gyokko:    { D1: -9, D2: 1,  D3: -10,D4: 0,  D5: -2 },
+    hantengu:  { D1: -4, D2: -10,D3: -5, D4: -10,D5: -10},
+    gyutaro:   { D1: -7, D2: -7, D3: 3,  D4: -8, D5: 5  },
+    ubuyashiki:{ D1: 10, D2: 10, D3: 4,  D4: 7,  D5: -8 },
+    muzan:     { D1: -10,D2: -10,D3: 8,  D4: -10,D5: 9  },
+    zenitsu:   { D1: 1,  D2: 8,  D3: -3, D4: 6,  D5: -1 } // 젠이츠(추가했다면)
+  };
+
+  const S = calcScoreVec();
+  const sL2 = Math.hypot(...S) || 1;
+
+  const ranked = Object.keys(profiles).map(key=>{
+    const p = ['D1','D2','D3','D4','D5'].map(d => profiles[key][d]/10); // [-1,1]
+    const pL2 = Math.hypot(...p) || 1;
+
+    const cos = (S.reduce((a,v,i)=>a+v*p[i],0))/(sL2*pL2);
+    const L1n = S.reduce((a,v,i)=>a+Math.abs(v-p[i]),0) / 10;
+    const L2n = Math.hypot(...S.map((v,i)=>v-p[i])) / Math.sqrt(20);
+
+    const score = 0.5*cos + 0.5*(1 - (0.6*L1n + 0.4*L2n));
+    return {key, score};
+  }).sort((a,b)=>b.score-a.score);
+
+  let pick = ranked[0].key;
+  const EPS = 0.03; // 상위 접전 시 민감도
+  if (ranked.length>1 && (ranked[0].score - ranked[1].score) < EPS) {
+    pick = (seededRandomFromScores() < 0.5) ? ranked[0].key : ranked[1].key;
+  }
+  if (!results[pick]) { // 결과 텍스트 없는 경우 대비
+    const alt = ranked.find(r => results[r.key]);
+    pick = alt ? alt.key : 'tanjiro';
+  }
+  showResult(pick);
+}
+
 
   // 막대
-  const max=35, min=-35;
-  ['D1','D2','D3','D4','D5'].forEach((d,i)=>{
-    const pct = Math.max(0, Math.min(100, ((scores[d]-min)/(max-min))*100));
-    dimFills[i].style.width = `${pct}%`;
-  });
+ const maxScore = 35; 
+const minScore = -35; 
+dimFills[0].style.width = `${Math.max(0, Math.min(100, ((scores.D1 - minScore) / (maxScore - minScore)) * 100))}%`;
+dimFills[1].style.width = `${Math.max(0, Math.min(100, ((scores.D2 - minScore) / (maxScore - minScore)) * 100))}%`;
+dimFills[2].style.width = `${Math.max(0, Math.min(100, ((scores.D3 - minScore) / (maxScore - minScore)) * 100))}%`;
+dimFills[3].style.width = `${Math.max(0, Math.min(100, ((scores.D4 - minScore) / (maxScore - minScore)) * 100))}%`;
+dimFills[4].style.width = `${Math.max(0, Math.min(100, ((scores.D5 - minScore) / (maxScore - minScore)) * 100))}%`;
+
 
   // 멘토링 점수(간단 유지)
   const mentoringScores = {
