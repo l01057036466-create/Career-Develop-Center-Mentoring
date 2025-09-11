@@ -74,7 +74,6 @@ button:hover{filter:brightness(.95); transform:translateY(-1px)}
 </head>
 <body>
   <div class="container">
-    <!-- 시작 화면 -->
     <div id="start-screen" class="screen active">
       <h1>⚔️ 귀살대 최종 선별 테스트 v6.0</h1>
       <p>20문항으로 5차원 성향을 측정, 20명의 캐릭터 중 가장 가까운 결과를 보여줘요.</p>
@@ -86,14 +85,12 @@ button:hover{filter:brightness(.95); transform:translateY(-1px)}
       </div>
     </div>
 
-    <!-- 질문 화면 -->
     <div id="quiz-screen" class="screen">
       <p id="question-text"></p>
       <div id="answer-buttons"></div>
       <div id="progress-bar-container"><div id="progress-bar"></div></div>
     </div>
 
-    <!-- 결과 화면 -->
     <div id="result-screen" class="screen">
       <h2>당신의 유형은…</h2>
       <div class="result-hero">
@@ -125,7 +122,6 @@ button:hover{filter:brightness(.95); transform:translateY(-1px)}
       </div>
     </div>
 
-    <!-- 궁합 화면 -->
     <div id="chart-screen" class="screen chart-container">
       <h3><span id="chart-owner-name"></span> 님의 궁합표</h3>
       <div id="dynamic-chart-content"></div>
@@ -136,7 +132,7 @@ button:hover{filter:brightness(.95); transform:translateY(-1px)}
   </div>
 
 <script>
-// ============== 상태 ==============
+// ============== 상태 변수 ==============
 const startScreen = document.getElementById('start-screen');
 const quizScreen  = document.getElementById('quiz-screen');
 const resultScreen= document.getElementById('result-screen');
@@ -144,13 +140,11 @@ const chartScreen = document.getElementById('chart-screen');
 const questionText= document.getElementById('question-text');
 const answerButtons=document.getElementById('answer-buttons');
 const progressBar = document.getElementById('progress-bar');
-
 const resultImage = document.getElementById('result-image');
 const resultName  = document.getElementById('result-name');
 const resultMainTrait = document.getElementById('result-main-trait');
 const resultSubTrait  = document.getElementById('result-sub-trait');
 const resultDescription = document.getElementById('result-description');
-
 const chartOwnerName = document.getElementById('chart-owner-name');
 const dynamicChartContent = document.getElementById('dynamic-chart-content');
 const dimFills = [
@@ -166,7 +160,7 @@ let currentQuestionIndex = 0;
 let scores = {D1:0, D2:0, D3:0, D4:0, D5:0};
 let lastResultKey = '';
 
-// ============== 질문 (원본 그대로) ==============
+// ============== 질문 데이터 ==============
 const questions = [
   { q:"Q1. 당신과 동료가 혈귀에게 치명상을 입고 해독약은 하나뿐입니다. 동료는 당신에게 약을 양보합니다. 당신의 선택은?", a:[
     { t:"동료의 뜻을 존중, 약을 먹고 그의 의지를 이어받아 반드시 살아남겠다고 맹세한다.", v:{D1:2,D2:-1,D3:1,D4:-1,D5:1} },
@@ -309,31 +303,8 @@ const questions = [
     { t:"아무도 없는 곳에서 조용히 산다.", v:{D1:-3,D2:-2,D3:0,D4:-2,D5:-3} }
   ]}
 ];
-  // [질문 배열 바로 아래에 추가]
-const dims = ['D1','D2','D3','D4','D5'];
-const SENSITIVITY = 1.2; // 1.0~1.5 권장. 높일수록 작은 차이에도 결과가 바뀜
-
-function computeDimRanges(){
-  const r = {D1:0,D2:0,D3:0,D4:0,D5:0};
-  questions.forEach(q=>{
-    const mins = {D1:Infinity,D2:Infinity,D3:Infinity,D4:Infinity,D5:Infinity};
-    const maxs = {D1:-Infinity,D2:-Infinity,D3:-Infinity,D4:-Infinity,D5:-Infinity};
-    q.a.forEach(opt=>{
-      dims.forEach(d=>{
-        const v = opt.v[d]||0;
-        if(v<mins[d]) mins[d]=v;
-        if(v>maxs[d]) maxs[d]=v;
-      });
-    });
-    dims.forEach(d=>{ r[d] += Math.abs((maxs[d]-mins[d])||0); });
-  });
-  dims.forEach(d=>{ if(r[d]===0) r[d]=1; });
-  return r;
-}
-const DIM_RANGE = computeDimRanges();
 
 // ============== 결과 데이터(이미지/타이틀/설명) ==============
-// 각 main은 고유 문구로 수정, 이미지 링크는 사용자가 준 주소 사용
 const results = {
   rengoku:{ name:"렌고쿠 쿄쥬로", main:"열정 넘치는 행동대장", sub:"[개척자 타입]",
     image:"https://i.namu.wiki/i/FYQRjmFAnpY0oJdphZb567Serv53K-mgArE7XtBimxmG4gZ7AjJylJFvhEAO9PSb2y3feViY--ltEDgqjIjZxhKCvumY0c68TxGji8rqDBxTSK_apTcCmhJ6_6orcLmmYKngVfTOi_2IGUPVlfOOJQ.webp",
@@ -534,7 +505,7 @@ const results = {
 결국 당신의 성향은 두려움 속에서도 끝내 자신을 믿고, 중요한 순간에는 누구보다 빠르고 강렬하게 빛나는 영혼입니다. 당신의 흔들림은 약함이 아니라, 언제나 번개처럼 치고 올라갈 힘을 모으는 과정입니다.` }
 };
 
-// ============== 궁합 데이터(텍스트만 저장) ==============
+// ============== 궁합 데이터 ==============
 const compatibilityData = {
   rengoku:{ love:"운명의 상대: 칸로지 미츠리. 뜨거운 열정 x 따스한 사랑의 최고 시너지.",
             friend:"최고의 동료: 우즈이 텐겐. 열정과 화려함이 전장을 압도.",
@@ -592,7 +563,7 @@ const compatibilityData = {
   default:{ friend:"최고의 동료: 탄지로.", warning:"피해야 할 상성: 무잔." }
 };
 
-// ============== 프로필 좌표(20인) ==============
+// ============== 캐릭터 프로필 좌표 ==============
 const profiles = {
   rengoku:{D1:8, D2:6,  D3:5,  D4:8,  D5:7},
   mitsuri:{D1:7, D2:10, D3:-4, D4:9,  D5:2},
@@ -613,10 +584,48 @@ const profiles = {
   gyutaro:{D1:-7,D2:-7, D3:3,  D4:-8, D5:5},
   ubuyashiki:{D1:10,D2:10,D3:4,  D4:7,  D5:-8},
   muzan:{D1:-10,D2:-10,D3:8, D4:-10,D5:9},
-  zenitsu:{D1:4, D2:6,  D3:-3, D4:6,  D5:3}
+  zenitsu:{D1:4,D2:6,D3:-3,D4:6,D5:3}
 };
 
-// ============== 흐름 함수 ==============
+// ============== 계산 헬퍼 함수 ==============
+const dims = ['D1','D2','D3','D4','D5'];
+const SENSITIVITY = 1.2; // 민감도
+
+function computeDimRanges(){
+  const r = {D1:0,D2:0,D3:0,D4:0,D5:0};
+  questions.forEach(q=>{
+    const mins={D1:Infinity,D2:Infinity,D3:Infinity,D4:Infinity,D5:Infinity};
+    const maxs={D1:-Infinity,D2:-Infinity,D3:-Infinity,D4:-Infinity,D5:-Infinity};
+    q.a.forEach(opt=>{
+      dims.forEach(d=>{
+        const v = opt.v[d]||0;
+        if(v<mins[d]) mins[d]=v;
+        if(v>maxs[d]) maxs[d]=v;
+      });
+    });
+    dims.forEach(d=>{ r[d]+=Math.abs((maxs[d]-mins[d])||0); });
+  });
+  dims.forEach(d=>{ if(r[d]===0) r[d]=1; });
+  return r;
+}
+const DIM_RANGE = computeDimRanges();
+
+// 답안 패턴 기반 결정성 난수 생성
+function seededRandomFromScores(){
+  let h = 0x811c9dc5; // FNV-1a
+  dims.forEach(d=>{
+    let x = Math.round((scores[d]+200)*7);
+    h ^= x; h = Math.imul(h, 0x01000193);
+  });
+  return (h>>>0)/4294967296;
+}
+
+// 점수를 정규화된 벡터로 변환
+function calcScoreVec(){
+  return dims.map(d => (scores[d] / DIM_RANGE[d]) * SENSITIVITY);
+}
+
+// ============== 핵심 흐름 함수 ==============
 function startQuiz(){
   switchScreen('quiz');
   currentQuestionIndex = 0;
@@ -656,115 +665,71 @@ function selectAnswer(delta){
   else calculateResult();
 }
 
-// 표준화 + 혼합 유사도(코사인 60% + 거리 40%)
-// 답안 패턴을 기반으로 "결정성 있는 난수"를 만들어주는 함수
-function seededRandomFromScores(){ 
-  let h = 0x811c9dc5;
-  ['D1','D2','D3','D4','D5'].forEach(d=>{
-    let x = Math.round((scores[d]+200)*7);
-    h ^= x; h = Math.imul(h, 0x01000193);
-  });
-  return (h>>>0)/4294967296;
-}
-
-// 사용자의 점수를 차원별로 정규화된 벡터로 바꿔주는 함수
-function calcScoreVec(){
-  return ['D1','D2','D3','D4','D5'].map(d => (scores[d] / DIM_RANGE[d]) * SENSITIVITY);
-}
-
-  // [calculateResult 위쪽 아무데나] — 헬퍼
-function seededRandomFromScores(){ // 답안 패턴 기반 결정성 난수
-  let h = 0x811c9dc5; // FNV-1a
-  ['D1','D2','D3','D4','D5'].forEach(d=>{
-    let x = Math.round((scores[d]+200)*7);
-    h ^= x; h = Math.imul(h, 0x01000193);
-  });
-  return (h>>>0)/4294967296;
-}
-function calcScoreVec(){
-  // dims/SENSITIVITY/DIM_RANGE는 ①에서 이미 선언된 상태여야 함
-  return ['D1','D2','D3','D4','D5'].map(d => (scores[d] / DIM_RANGE[d]) * SENSITIVITY);
-}
-
-// [기존 calculateResult() 전체 교체]
 function calculateResult() {
-  // ─ profiles는 기존에 쓰던 그대로 두셔도 됩니다.
-  const profiles = {
-    rengoku:   { D1: 8,  D2: 6,  D3: 5,  D4: 8,  D5: 7  },
-    mitsuri:   { D1: 7,  D2: 10, D3: -4, D4: 9,  D5: 2  },
-    himejima:  { D1: 10, D2: 8,  D3: 8,  D4: 2,  D5: -6 },
-    tanjiro:   { D1: 9,  D2: 9,  D3: 2,  D4: 10, D5: 0  },
-    sanemi:    { D1: 4,  D2: -8, D3: 6,  D4: -6, D5: 8  },
-    shinobu:   { D1: 2,  D2: -9, D3: 9,  D4: -5, D5: 4  },
-    giyu:      { D1: 3,  D2: -7, D3: 7,  D4: -8, D5: -3 },
-    uzui:      { D1: 1,  D2: 5,  D3: -8, D4: 6,  D5: 6  },
-    muichiro:  { D1: -5, D2: -5, D3: -2, D4: -4, D5: 3  },
-    iguro:     { D1: 2,  D2: -8, D3: 10, D4: -7, D5: 1  },
-    nezuko:    { D1: 8,  D2: 7,  D3: -6, D4: 5,  D5: -7 },
-    kokushibo: { D1: -8, D2: -6, D3: 9,  D4: -9, D5: 9  },
-    akaza:     { D1: -6, D2: -4, D3: 6,  D4: -3, D5: 10 },
-    doma:      { D1: -10,D2: 4,  D3: -7, D4: 3,  D5: -5 },
-    gyokko:    { D1: -9, D2: 1,  D3: -10,D4: 0,  D5: -2 },
-    hantengu:  { D1: -4, D2: -10,D3: -5, D4: -10,D5: -10},
-    gyutaro:   { D1: -7, D2: -7, D3: 3,  D4: -8, D5: 5  },
-    ubuyashiki:{ D1: 10, D2: 10, D3: 4,  D4: 7,  D5: -8 },
-    muzan:     { D1: -10,D2: -10,D3: 8,  D4: -10,D5: 9  },
-    zenitsu:   { D1: 1,  D2: 8,  D3: -3, D4: 6,  D5: -1 } // 젠이츠(추가했다면)
-  };
-
   const S = calcScoreVec();
   const sL2 = Math.hypot(...S) || 1;
 
   const ranked = Object.keys(profiles).map(key=>{
-    const p = ['D1','D2','D3','D4','D5'].map(d => profiles[key][d]/10); // [-1,1]
+    const p = ['D1','D2','D3','D4','D5'].map(d => profiles[key][d]/10); // [-1,1] 스케일
     const pL2 = Math.hypot(...p) || 1;
 
     const cos = (S.reduce((a,v,i)=>a+v*p[i],0))/(sL2*pL2);
     const L1n = S.reduce((a,v,i)=>a+Math.abs(v-p[i]),0) / 10;
     const L2n = Math.hypot(...S.map((v,i)=>v-p[i])) / Math.sqrt(20);
 
-    const score = 0.5*cos + 0.5*(1 - (0.6*L1n + 0.4*L2n));
+    const score = 0.5*cos + 0.5*(1 - (0.6*L1n + 0.4*L2n)); // 코사인+거리 혼합
     return {key, score};
   }).sort((a,b)=>b.score-a.score);
 
   let pick = ranked[0].key;
-  const EPS = 0.03; // 상위 접전 시 민감도
-  if (ranked.length>1 && (ranked[0].score - ranked[1].score) < EPS) {
+  const EPS = 0.03; // 접전 시 민감도
+  if (ranked.length > 1 && (ranked[0].score - ranked[1].score) < EPS) {
     pick = (seededRandomFromScores() < 0.5) ? ranked[0].key : ranked[1].key;
   }
-  if (!results[pick]) { // 결과 텍스트 없는 경우 대비
+  
+  // 결과 텍스트가 없는 캐릭터가 나올 경우를 대비한 안전장치
+  if (!results[pick]) {
     const alt = ranked.find(r => results[r.key]);
     pick = alt ? alt.key : 'tanjiro';
   }
   showResult(pick);
 }
 
+function showResult(key){
+  lastResultKey = key;
+  const r = results[key];
+  resultImage.src = r.image;
+  resultName.textContent = r.name;
+  resultMainTrait.textContent = r.main;
+  resultSubTrait.textContent = r.sub;
+  resultDescription.textContent = r.desc;
 
-  // 막대
- const maxScore = 35; 
-const minScore = -35; 
-dimFills[0].style.width = `${Math.max(0, Math.min(100, ((scores.D1 - minScore) / (maxScore - minScore)) * 100))}%`;
-dimFills[1].style.width = `${Math.max(0, Math.min(100, ((scores.D2 - minScore) / (maxScore - minScore)) * 100))}%`;
-dimFills[2].style.width = `${Math.max(0, Math.min(100, ((scores.D3 - minScore) / (maxScore - minScore)) * 100))}%`;
-dimFills[3].style.width = `${Math.max(0, Math.min(100, ((scores.D4 - minScore) / (maxScore - minScore)) * 100))}%`;
-dimFills[4].style.width = `${Math.max(0, Math.min(100, ((scores.D5 - minScore) / (maxScore - minScore)) * 100))}%`;
+  // 5차원 성향 막대그래프 채우기
+  // 각 차원별 점수의 최소, 최대 범위를 동적으로 계산하는 것이 좋지만, 여기서는 고정값으로 설정
+  const maxScore = 35, minScore = -35; // Q20개*최대절대값(3) -> 대략적인 범위
+  dimFills[0].style.width = `${Math.max(0, Math.min(100, ((scores.D1 - minScore) / (maxScore - minScore)) * 100))}%`;
+  dimFills[1].style.width = `${Math.max(0, Math.min(100, ((scores.D2 - minScore) / (maxScore - minScore)) * 100))}%`;
+  dimFills[2].style.width = `${Math.max(0, Math.min(100, ((scores.D3 - minScore) / (maxScore - minScore)) * 100))}%`;
+  dimFills[3].style.width = `${Math.max(0, Math.min(100, ((scores.D4 - minScore) / (maxScore - minScore)) * 100))}%`;
+  dimFills[4].style.width = `${Math.max(0, Math.min(100, ((scores.D5 - minScore) / (maxScore - minScore)) * 100))}%`;
 
-
-  // 멘토링 점수(간단 유지)
+  // 멘토링 점수 표시
   const mentoringScores = {
     rengoku:19, mitsuri:17, himejima:18, tanjiro:14, sanemi:15, shinobu:16,
     giyu:12, uzui:16, muichiro:11, iguro:15, nezuko:9, kokushibo:3, akaza:4,
     doma:1, gyokko:2, hantengu:1, gyutaro:2, ubuyashiki:20, muzan:0, zenitsu:13
   };
-  const m = mentoringScores[key] ?? 10;
+  const m = mentoringScores[key] ?? 10; // 해당 캐릭터 점수가 없으면 기본 10점
   let msg = `후배사랑 멘토링 적합도: ${m}/20`;
-  if(m>=16) msg += `\n당신은 모두에게 귀감이 되는 최고의 멘토입니다!`;
-  else if(m>=11) msg += `\n충분한 자질을 갖춘 멘토입니다. 따뜻함이 큰 힘이 돼요.`;
-  else if(m>=6) msg += `\n잠재력이 있어요. 당신만의 방식으로 이끌 수 있습니다.`;
+  if(m >= 16) msg += `\n당신은 모두에게 귀감이 되는 최고의 멘토입니다!`;
+  else if(m >= 11) msg += `\n충분한 자질을 갖춘 멘토입니다. 따뜻함이 큰 힘이 돼요.`;
+  else if(m >= 6) msg += `\n잠재력이 있어요. 당신만의 방식으로 이끌 수 있습니다.`;
   else msg += `\n개인 플레이에서 더 빛날 수 있어요!`;
   mentoringRecommendation.textContent = msg;
-}
 
+  switchScreen('result');
+}
+  
 function showChart(){
   switchScreen('chart');
   chartOwnerName.textContent = results[lastResultKey].name;
