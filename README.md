@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>귀살대 최종 선별 테스트 v5.1</title>
+    <title>귀살대 최종 선별 테스트 v5.1 (patched)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
         :root {
@@ -45,7 +45,7 @@
         .result-container h2 { font-size: 1.5em; }
         #result-image { width: 180px; height: 180px; border-radius: 50%; margin-bottom: 15px; border: 4px solid var(--primary); object-fit: cover; }
         #result-main-trait { font-size: 2.5em; font-weight: bold; color: #ffffff; margin: 10px 0; }
-        #result-sub-trait { font-size: 1.3em; color: var(--text-mid); font-weight: bold; }
+        #result-sub-trait { font-size: 1.3em; color: var(--text-mid); font-weight: bold; white-space: pre-wrap; }
         #result-description { 
             font-size: 1.1em; text-align: justify; line-height: 1.8; 
             margin-top: 25px; color: var(--text-light); white-space: pre-wrap; 
@@ -56,11 +56,14 @@
         #dynamic-chart-content p { margin-left: 14px; line-height: 1.6; }
         #dynamic-chart-content b { color: var(--text-mid); }
         .button-group { display: flex; justify-content: center; }
+
+        /* 성향 바 */
         .stats-container { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--secondary); }
         .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .stat-title { font-weight: bold; font-size: 0.9em; }
-        .stat-bar { height: 15px; background-color: var(--secondary); flex-grow: 1; margin: 0 10px; border-radius: 10px; position: relative; }
-        .stat-fill { background: linear-gradient(90deg, #e94560, #ff7e5f); height: 100%; border-radius: 10px; }
+        .stat-bar { height: 15px; background-color: var(--secondary); flex-grow: 1; margin: 0 10px; border-radius: 10px; position: relative; overflow: hidden; }
+        .stat-fill { background: linear-gradient(90deg, #e94560, #ff7e5f); height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s; }
+
         #mentoring-score-container { background-color: var(--bg-dark); padding: 15px; border-radius: 10px; margin-top: 20px; }
         #mentoring-recommendation { font-size: 1.1em; font-weight: bold; white-space: pre-wrap; }
     </style>
@@ -140,10 +143,69 @@
     const mentoringRecommendation = document.getElementById('mentoring-recommendation');
     
     let currentQuestionIndex = 0;
-    // D1: 대의-개인, D2: 감성-이성, D3: 자유-규율, D4: 희망-현실, D5: 공격-수비
+
+    // === 차원 부호 의미(양수/음수) 명시 ===
+    // D1: 개인(음수) ↔ 대의(양수)
+    // D2: 이성(음수) ↔ 감성(양수)
+    // D3: 자유(음수) ↔ 규율(양수)
+    // D4: 현실(음수) ↔ 희망(양수)
+    // D5: 수비(음수) ↔ 공격(양수)
+
+    // 사용자 응답 누적점수(초기화)
     let scores = { D1: 0, D2: 0, D3: 0, D4: 0, D5: 0 };
     let lastResultKey = '';
 
+    // =========================
+    //  ❖ 매핑 개선 유틸 & 파라미터
+    // =========================
+    const DIMS = ["D1","D2","D3","D4","D5"];
+
+    function toVec(obj){ return DIMS.map(k => obj[k] ?? 0); }
+    function l2norm(v){ const n = Math.hypot(...v) || 1; return v.map(x => x / n); }
+
+    function buildAnchors(profiles){
+      const keys = Object.keys(profiles);
+      const A = keys.map(k => l2norm(toVec(profiles[k]))); // 앵커 정규화
+      return { keys, A };
+    }
+
+    // 다양성/균형 노브: tau(온도), priors(사전분포), lambdas(빈도보정)
+    const MODEL = {
+      tau: 0.38,    // ↓단호 ↑다채로움 (0.3~0.5 권장)
+      priors: null, // 기본 균등. 필요 시 [19] 배열로 목표 비율 반영
+      lambdas: null // 타입별 빈도 보정(기본 0)
+    };
+
+    function predictType(theta_unit, anchors, model=MODEL){
+      const {A, keys} = anchors;
+      const J = A.length;
+      const lam = model.lambdas ?? Array(J).fill(0);
+      const pri = model.priors  ?? Array(J).fill(1/J);
+
+      // d_j = ||θ - A_j||^2 - λ_j  (θ, A 정규화 전제 → 방향성 중심)
+      const dist2 = A.map((a,j)=> {
+        let s=0; for(let k=0;k<5;k++){ const diff = theta_unit[k]-a[k]; s+=diff*diff; }
+        return s - lam[j];
+      });
+
+      // softmax(-d/τ) * prior
+      const logits = dist2.map((d,j)=> (-d/Math.max(1e-6, model.tau)) + Math.log(Math.max(pri[j],1e-9)));
+      const mx = Math.max(...logits);
+      const exps = logits.map(z=>Math.exp(z-mx));
+      const Z = exps.reduce((a,b)=>a+b,0);
+      const probs = exps.map(e=>e/Z);
+
+      const order = [...Array(J).keys()].sort((i,j)=>probs[j]-probs[i]);
+      return {
+        winnerKey: keys[order[0]],
+        topOrder: order,
+        probs
+      };
+    }
+
+    // =========================
+    //  질문/답변 데이터 (원본 유지)
+    // =========================
     const questions = [
         { q: "Q1. 당신과 동료가 혈귀에게 치명상을 입고 해독약은 하나뿐입니다. 동료는 당신에게 약을 양보합니다. 당신의 선택은?", a: [
             { t: "동료의 뜻을 존중, 약을 먹고 그의 의지를 이어받아 반드시 살아남겠다고 맹세한다.", v: { D1: 2, D2: -1, D3: 1, D4: -1, D5: 1 } },
@@ -287,6 +349,9 @@
         ]},
     ];
 
+    // =========================
+    //  결과 텍스트/이미지 (원본 유지)
+    // =========================
     const results = {
         rengoku: { name: "렌고쿠 쿄쥬로", main: "열정 넘치는 행동대장", sub: "[개척자 타입]", desc: "불꽃의 호흡처럼, 당신의 존재는 어둠 속에서도 꺼지지 않는 등불이며, 스스로 빛을 내어 세상을 밝히는 희망입니다. 타인이 주저하고 두려워할 때, 당신은 먼저 나서서 길을 열고 모두를 이끄는 사람이지요. 그 따뜻한 열정은 주변을 비추고, 함께하는 이들에게 앞으로 나아갈 용기를 불어넣습니다.\n\n당신의 행동은 언제나 뜨겁지만 결코 무분별하지 않습니다. 불꽃이 무질서하게 타오르는 것이 아니라, 필요한 순간에 가장 강렬하게 타올라 어둠을 밀어내듯, 당신의 결단은 늘 공동체와 동료를 위한 선택으로 이어집니다. 그 불꽃은 자신의 안위를 뒤로한 채, 모두가 살아남을 수 있는 길을 밝히려는 헌신의 상징입니다.\n\n불꽃에 베인 혈귀는 단순한 상처가 아니라, 정의의 열기에 전신이 태워지는 듯한 절망을 느낍니다. 그들에게는 불꽃이 곧 심판이자 소멸이며, 더 이상 저항할 수 없는 뜨거운 운명이지요. 그러나 같은 불꽃을 마주하는 아군에게는 정반대의 감정이 찾아옵니다. 꺼져가던 용기와 희망이 다시 타올라, 쓰러진 자도 다시 일어서고, 두려움에 떨던 자도 다시 칼을 쥘 힘을 얻습니다.\n\n결국 당신의 존재는 단순히 불꽃이 아니라, 꺼지지 않는 희망의 불길입니다. 타인을 위해 몸을 태우는 그 헌신은 곁에 있는 모두를 지키는 방패이자, 더 나아가야 할 길을 비추는 등불입니다. 그 열기는 혼자가 아니라 함께 살아가야 한다는 진리를 새기며, 그 온기는 끝내 모두를 다시 일으켜 세웁니다.", score: 19, image: "https://i.namu.wiki/i/FYQRjmFAnpY0oJdphZb567Serv53K-mgArE7XtBimxmG4gZ7AjJylJFvhEAO9PSb2y3feViY--ltEDgqjIjZxhKCvumY0c68TxGji8rqDBxTSK_apTcCmhJ6_6orcLmmYKngVfTOi_2IGUPVlfOOJQ.webp" },
         uzui: { name: "우즈이 텐겐", main: "화려한 해결사", sub: "[아티스트 타입]", desc: "음의 울림처럼, 당신의 성향은 화려함과 생동감 속에서 빛납니다. 늘 유쾌하고 자신감 넘치는 모습으로 사람들의 시선을 사로잡지만, 그 내면에는 누구보다 진중한 책임감과 동료를 향한 따뜻한 마음이 숨어 있지요. 당신은 자신의 존재가 무대 위의 조명이 되어야 한다고 믿으며, 삶을 단조롭게 흘려보내는 대신 언제나 화려하고 값지게 살아가려는 열망을 품고 있습니다.\n\n당신이 추구하는 것은 단순한 승리나 강함이 아닙니다. “화려한 삶, 그리고 지켜야 할 사람들을 끝까지 보호하는 것”입니다. 그래서 때로는 허세와 농담으로 가볍게 보일지라도, 중요한 순간에는 누구보다 진지하게 칼을 휘두르며, 자신보다 소중한 이들을 먼저 생각하지요. 당신의 화려함은 결코 겉모습만의 장식이 아니라, 어둠 속에서도 사람들을 빛나게 하는 힘입니다.\n\n음의 호흡에 베인 자는 단순히 칼날의 상처를 입는 것이 아니라, 마치 전장의 북소리와 폭죽이 한순간에 터져 나오는 듯한 충격과 압도감을 경험합니다. 그 박동 같은 울림은 상대의 혼을 흔들어 혼란스럽게 만들고, 순간적으로 모든 것이 무너져내리는 듯한 공허를 남깁니다. 그러나 같은 울림은 아군에게는 전혀 다르게 다가옵니다. 그것은 곧 용기와 사기를 북돋우는 힘으로 바뀌어, 다시 싸울 수 있는 심장을 두근거리게 하지요.\n\n결국 당신의 성향은 평범함을 거부하고, 언제나 자신답게 화려하게 살아가려는 영혼입니다. 그 화려함은 허세가 아니라, 무대 위에서 끝내 꺼지지 않는 빛이자, 곁에 있는 이들을 위한 힘입니다. 우즈이 텐겐처럼, 당신은 삶을 하나의 장대한 공연처럼 꾸려가며, 그 속에서 동료와 사랑하는 이들을 끝까지 지켜내는 사람입니다.", score: 16, image: "https://i.namu.wiki/i/CWXL0d8ayNZgQVoCTU6FXZPU3ILoSOml5G83Pq3VaZGnZ0ob2iGfM_i4ocva0evhWeR9ET9ONUbjkZlG8sLzXZF6ZwuZhCrq2aYeekXEe5KdrYQJuZxgru2o-bcPEx--hoVYuwR50SlEoHlcA2bCTw.webp" },
@@ -308,7 +373,7 @@
         ubuyashiki: { name: "우부야시키 카가야", main: "모든 것을 포용하는 통찰가", sub: "[성인(聖人) 타입]", desc: "어느 한쪽에 치우치지 않는 완벽한 균형감과 미래를 내다보는 혜안으로 모두를 아우르는 당신. 부드럽지만 그 누구보다 강한 신념을 가졌으며, 당신의 말 한마디는 조직 전체의 운명을 결정합니다. 그의 목소리는 거칠고 반항적인 대원마저 고개 숙이게 하는 신비한 힘이 있습니다. 당신은 팀에 참여할 인재가 아니라, 팀을 이끌고 기획해야 할 리더 그 자체입니다.", score: 20, image: "https://i.namu.wiki/i/XDGCRQloqu_r7vfiiK85QTrEIw_JbzOUtaiN5XziI5DEM3JGpwyLU9OHz16wI5raV8EttmGmXRqQzK8vQcLmXLNgaIQ2IlI6rSBVzEEg8dc8FP5jb1LE_B6xdjPAwEn084O-8vsyzMdgpI6uMKUvgw.webp" },
         muzan: { name: "키부츠지 무잔", main: "모든 것을 지배하는 정복자", sub: "[군주 타입]", desc: "끝없는 밤처럼, 당신의 성향은 완전함과 영원을 추구하는 집착 속에 존재합니다. 인간으로 태어났으나 병약한 몸에 갇혀 죽음을 두려워하던 그는, 누구보다 강렬하게 생존을 갈망했지요. 그 두려움은 곧 무한한 권력과 불멸의 육체를 추구하는 집념으로 바뀌었고, 마침내 그는 세상의 모든 어둠을 삼켜버리는 존재가 되었습니다.\n\n당신이 추구하는 것은 단순한 힘이 아닙니다. “죽음을 넘어서는 절대적인 완전함”입니다. 누구에게도 굴하지 않고, 어떤 운명에도 지배당하지 않으며, 끝내 혼자서도 세상을 지배할 수 있는 절대적 존재가 되고자 합니다. 그 길은 고독했고, 타인의 온기와는 멀어졌지만, 당신은 끝내 그 고독마저도 감수하며 자신의 길을 걸어갑니다.\n\n아이러니하게도, 당신의 성향은 두려움에서 비롯되었지만, 그 두려움은 곧 누구도 도달할 수 없는 강렬한 집념으로 변했습니다. 타인은 당신의 차가움을 이해하지 못하지만, 그 차가움 속에는 끝내 살아남고자 하는, 가장 원초적이고 뜨거운 갈망이 숨어 있습니다.\n\n결국 당신의 성향은 죽음을 넘어 완전함을 추구하는 영혼입니다. 그것은 고독하고 냉혹한 길이지만, 동시에 흔들림 없는 의지의 증거이기도 합니다. 키부츠지 무잔처럼, 당신은 어둠 속에서도 끊임없이 자신을 단련하고, 끝내는 완전한 존재를 향해 나아가는 사람입니다.", score: 0, image: "https://i.namu.wiki/i/Wo9UiCNf2RLI-YpjyR5RDGnge_fZfS-i_C2sO45kWJQ7FJSzEivsrbDoiGjft3GkTNA3ikcIEgXifBZgBUc9TfdPTADfPsEFhqoatMPOgCvFDBwg0_bSPu8c9nbpxDQu1ULJOSNX87R_aWRwRr1lZA.webp" },
     };
-    
+
     const compatibilityData = {
         rengoku: { love: "❤️ 운명의 상대 (칸로지 미츠리): 당신의 뜨거운 열정과 미츠리의 따스한 사랑이 만나면, 세상 가장 밝은 빛을 내는 한 쌍이 될 것입니다.", friend: "🤝 최고의 동료 (우즈이 텐겐): 당신의 열정과 텐겐의 화려함은 최고의 시너지를 발휘하는 동료입니다. 두 사람이 함께라면 불가능한 임무는 없습니다.", warning: "⚠️ 피해야 할 상대 (코쿠시보): 완전한 강함만을 추구하는 그는 당신의 헌신적인 열정을 이해하지 못할 수 있습니다." },
         tanjiro: { love: "❤️ 운명의 상대 (칸로지 미츠리, 카마도 네즈코): 당신의 따뜻함과 순수함은 서로에게 가장 큰 위안과 기쁨이 됩니다.", friend: "🤝 최고의 동료 (렌고쿠 쿄쥬로, 토미오카 기유): 당신을 올바른 길로 이끌어 줄 최고의 스승이자, 묵묵히 당신을 믿고 지지해 줄 든든한 아군입니다.", warning: "⚠️ 피해야 할 상대 (키부츠지 무잔): 당신의 모든 신념과 정반대에 있는 존재. 결코 함께할 수 없습니다." },
@@ -332,6 +397,9 @@
         default: { friend: "🤝 최고의 동료 (카마도 탄지로): 그의 긍정적인 에너지가 당신에게 좋은 영향을 줄 것입니다.", warning: "⚠️ 피해야 할 상대 (키부츠지 무잔): 당신과는 상극의 성향을 가졌습니다."}
     };
 
+    // =========================
+    //   UI 로직 (원본 유지 + 일부 개선)
+    // =========================
     function startQuiz() {
         startScreen.style.display = 'none'; quizScreen.style.display = 'block';
         showQuestion();
@@ -355,8 +423,12 @@
         currentQuestionIndex++;
         if (currentQuestionIndex < questions.length) { showQuestion(); } else { calculateResult(); }
     }
-    
+
+    // =========================
+    //   ★ 핵심: 확률형 매핑으로 교체
+    // =========================
     function calculateResult() {
+        // 19개 앵커(캐릭터) 좌표
         const profiles = {
             rengoku:   { D1: 8,  D2: 6,  D3: 5,  D4: 8,  D5: 7  },
             mitsuri:   { D1: 7,  D2: 10, D3: -4, D4: 9,  D5: 2  },
@@ -378,33 +450,44 @@
             ubuyashiki:{ D1: 10, D2: 10, D3: 4,  D4: 7,  D5: -8 },
             muzan:     { D1: -10,D2: -10,D3: 8,  D4: -10,D5: 9  }
         };
-        let minDistance = Infinity;
-        let resultKey = 'tanjiro';
-        for (const key in profiles) {
-            const profile = profiles[key];
-            const distance = Math.sqrt(
-                Math.pow(scores.D1 - profile.D1, 2) +
-                Math.pow(scores.D2 - profile.D2, 2) +
-                Math.pow(scores.D3 - profile.D3, 2) +
-                Math.pow(scores.D4 - profile.D4, 2) +
-                Math.pow(scores.D5 - profile.D5, 2)
-            );
-            if (distance < minDistance) {
-                minDistance = distance;
-                resultKey = key;
-            }
-        }
-        showResult(resultKey);
+        const anchors = buildAnchors(profiles);
+
+        // 응답 벡터 → 정규화 (방향 중심)
+        const theta = l2norm(toVec(scores));
+
+        // 확률형 매핑
+        const { winnerKey, topOrder, probs } = predictType(theta, anchors, MODEL);
+
+        // 상위 2개 정보(혼합 안내용)
+        const j1 = topOrder[0], j2 = topOrder[1];
+        const meta = {
+            top2Key: anchors.keys[j2],
+            p1: probs[j1],
+            p2: probs[j2],
+            margin: probs[j1] - probs[j2]
+        };
+
+        showResult(winnerKey, meta);
     }
 
-    function showResult(key) {
+    function showResult(key, meta = null) {
         lastResultKey = key;
         const result = results[key];
         quizScreen.style.display = 'none'; chartScreen.style.display = 'none'; resultScreen.style.display = 'block';
         resultImage.src = result.image;
-        resultMainTrait.innerText = result.main; resultSubTrait.innerText = result.sub;
+        resultMainTrait.innerText = result.main;
+
+        // 상위 2 타입이 근소(마진<0.08)하면 안내 추가
+        if (meta && meta.margin < 0.08 && results[meta.top2Key]) {
+            const rival = results[meta.top2Key].name;
+            resultSubTrait.innerText = `${result.sub}\n(근소하게 ${rival}와 경합: ${(meta.p1*100).toFixed(1)}% vs ${(meta.p2*100).toFixed(1)}%)`;
+        } else {
+            resultSubTrait.innerText = result.sub;
+        }
+
         resultDescription.innerText = result.desc;
-        
+
+        // 성향 바: -35 ~ +35 → 0~100%
         const maxScore = 35; 
         const minScore = -35; 
         dimFills[0].style.width = `${Math.max(0, Math.min(100, ((scores.D1 - minScore) / (maxScore - minScore)) * 100))}%`;
@@ -413,6 +496,7 @@
         dimFills[3].style.width = `${Math.max(0, Math.min(100, ((scores.D4 - minScore) / (maxScore - minScore)) * 100))}%`;
         dimFills[4].style.width = `${Math.max(0, Math.min(100, ((scores.D5 - minScore) / (maxScore - minScore)) * 100))}%`;
 
+        // 멘토링 추천(원본 유지)
         const mentoringScore = result.score;
         let recommendationText = `후배사랑 멘토링 적합도: ${mentoringScore}/20`;
         if (mentoringScore >= 16) {
@@ -424,11 +508,9 @@
         } else {
             recommendationText += "\n팀 활동보다는 당신의 역량을 마음껏 펼칠 수 있는 개인 활동에서 더 빛날 수 있습니다!";
         }
-        
         if (mentoringScore >= 11) {
-             recommendationText += "\n\n[후배사랑 멘토링]은 바로 당신을 위한 무대입니다!";
+            recommendationText += "\n\n[후배사랑 멘토링]은 바로 당신을 위한 무대입니다!";
         }
-        
         mentoringRecommendation.innerText = recommendationText;
     }
 
@@ -458,6 +540,49 @@
         resultScreen.style.display = 'none'; chartScreen.style.display = 'none';
         startScreen.style.display = 'block';
     }
+
+    // (선택) 콘솔에서 분포/안정성 대략 보기:
+    // simulate(10000) 식으로 호출하면 shares/flipRate 나옵니다.
+    /*
+    function simulate(N=20000){
+      const profiles = {
+        rengoku:{D1:8,D2:6,D3:5,D4:8,D5:7}, mitsuri:{D1:7,D2:10,D3:-4,D4:9,D5:2},
+        himejima:{D1:10,D2:8,D3:8,D4:2,D5:-6}, tanjiro:{D1:9,D2:9,D3:2,D4:10,D5:0},
+        sanemi:{D1:4,D2:-8,D3:6,D4:-6,D5:8}, shinobu:{D1:2,D2:-9,D3:9,D4:-5,D5:4},
+        giyu:{D1:3,D2:-7,D3:7,D4:-8,D5:-3}, uzui:{D1:1,D2:5,D3:-8,D4:6,D5:6},
+        muichiro:{D1:-5,D2:-5,D3:-2,D4:-4,D5:3}, iguro:{D1:2,D2:-8,D3:10,D4:-7,D5:1},
+        nezuko:{D1:8,D2:7,D3:-6,D4:5,D5:-7}, kokushibo:{D1:-8,D2:-6,D3:9,D4:-9,D5:9},
+        akaza:{D1:-6,D2:-4,D3:6,D4:-3,D5:10}, doma:{D1:-10,D2:4,D3:-7,D4:3,D5:-5},
+        gyokko:{D1:-9,D2:1,D3:-10,D4:0,D5:-2}, hantengu:{D1:-4,D2:-10,D3:-5,D4:-10,D5:-10},
+        gyutaro:{D1:-7,D2:-7,D3:3,D4:-8,D5:5}, ubuyashiki:{D1:10,D2:10,D3:4,D4:7,D5:-8},
+        muzan:{D1:-10,D2:-10,D3:8,D4:-10,D5:9}
+      };
+      const anchors = buildAnchors(profiles);
+      const hist = Object.fromEntries(anchors.keys.map(k=>[k,0]));
+      let flips = 0;
+      for (let n=0;n<N;n++){
+        let s = {D1:0,D2:0,D3:0,D4:0,D5:0};
+        for (const q of questions){
+          const a = q.a[Math.floor(Math.random()*q.a.length)].v;
+          for (const k of DIMS) s[k]+= (a[k]||0);
+        }
+        const t1 = l2norm(toVec(s));
+        const r1 = predictType(t1, anchors, MODEL).winnerKey;
+        hist[r1]++;
+        for(let c=0;c<2;c++){
+          const qi = Math.floor(Math.random()*questions.length);
+          const a = questions[qi].a[Math.floor(Math.random()*q.a.length)].v;
+          for (const k of DIMS) s[k]+= (a[k]||0);
+        }
+        const t2 = l2norm(toVec(s));
+        const r2 = predictType(t2, anchors, MODEL).winnerKey;
+        if (r1!==r2) flips++;
+      }
+      console.log('coverage', Object.values(hist).filter(x=>x>0).length,'/ 19');
+      console.log('shares', Object.fromEntries(Object.entries(hist).map(([k,v])=>[k,(v/N*100).toFixed(2)+'%'])));
+      console.log('flipRate(%)', (flips/N*100).toFixed(1));
+    }
+    */
 </script>
 </body>
 </html>
