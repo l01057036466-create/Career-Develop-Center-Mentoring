@@ -42,6 +42,9 @@ const questions = [
     { part: "Part 5/5: 바라보는 세계", scenario: "적이라 할지라도, 그가 왜 오니가 될 수밖에 없었는지 슬픈 사연을 듣게 된다면?", belief_a: "깊은 연민을 느끼고 그의 운명에 대해 생각하게 될 것이다", belief_b: "그것은 개인의 사정일 뿐, 동정의 여지가 없다", labels: ["깊은 공감", "연민", "이해 시도", "냉정한 분리", "완전한 무시"] },
     { part: "Part 5/5: 바라보는 세계", scenario: "당신이 동료들과 나누고 싶은 대화의 주제는?", belief_a: "삶과 죽음, 인간의 마음 같은 철학적인 주제", belief_b: "다음 임무에 대한 구체적인 전략", labels: ["철학적 담론", "의미 탐구", "균형", "실용적 대화", "오직 전략"] }
 ];
+// 전체 문항 수와 파트 목록을 자동으로 계산 (하드코딩 방지)
+const TOTAL_Q = questions.length;
+const PART_ORDER = Array.from(new Set(questions.map(q => q.part)));
 
 // ==============================================================
 // STAGE 1: 캐릭터 데이터
@@ -718,27 +721,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4500);
     }
 
-    // 학생 답변과 캐릭터 데이터의 유사도를 계산하는 함수
-    function calculateSimilarity(userScores, characterProfile) {
-      if (!characterProfile || !characterProfile.scores) return Infinity;
-      if (userScores.length !== characterProfile.scores.length) return Infinity;
-      let totalDifference = 0;
-      userScores.forEach((score, i) => {
-        totalDifference += Math.abs(score - characterProfile.scores[i]);
-      });
-      return totalDifference;
-    }
+// 학생 답변과 캐릭터 데이터의 유사도를 계산하는 함수 (길이 달라도 안전)
+function calculateSimilarity(userScores, characterProfile) {
+  const charScores = characterProfile?.scores ?? [];
+  if (!Array.isArray(userScores) || !Array.isArray(charScores)) {
+    return Number.POSITIVE_INFINITY; // 데이터가 없을 때만 Infinity
+  }
+
+  const common = Math.min(userScores.length, charScores.length);
+  let diff = 0;
+
+  for (let i = 0; i < common; i++) {
+    const u = Number.isFinite(userScores[i]) ? userScores[i] : 0;
+    const c = Number.isFinite(charScores[i]) ? charScores[i] : 0;
+    diff += Math.abs(u - c);
+  }
+
+  // 문항 수가 서로 다르면 페널티 (문항당 2점)
+  const lenGap = Math.abs(userScores.length - charScores.length);
+  diff += lenGap * 2;
+
+  return diff; // 작을수록 더 유사
+}
+// 유사도 퍼센트(0~100) 계산
+function similarityPct(userScores, characterProfile) {
+  const charScores = characterProfile?.scores ?? [];
+  if (!Array.isArray(userScores) || !Array.isArray(charScores)) return 0;
+
+  const diff = calculateSimilarity(userScores, characterProfile);
+  const maxDiff =
+    (Math.min(userScores.length, charScores.length) * 4) +
+    (Math.abs(userScores.length - charScores.length) * 2);
+
+  return Math.max(0, 100 - Math.round((diff / maxDiff) * 100));
+}
 
     // 가장 유사한 캐릭터 Top 3를 찾는 함수
-    function findBestMatches(userScores, allCharacters) {
-        const results = allCharacters.map(character => ({
-            score: calculateSimilarity(userScores, character),
-            character: character
-        }));
-        results.sort((a, b) => a.score - b.score);
-        return results.slice(0, 3);
-    }
-    
+function findBestMatches(userScores, allCharacters) {
+  const results = allCharacters.map(character => {
+    const diff = calculateSimilarity(userScores, character);
+    const pct  = similarityPct(userScores, character);
+    return { diff, pct, character };
+  });
+
+  results.sort((a, b) => a.diff - b.diff); // diff가 작을수록 유사
+  return results.slice(0, 3);              // Top 3
+}
+
     // 결과 레이더 차트를 생성하는 함수
     function generateRadarChart(userScores) {
         const size = 300;
@@ -784,25 +813,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 최종 결과 페이지를 생성하고 보여주는 함수
-    function calculateAndShowResult() {
-        // characterData가 정의되지 않았거나 비어있는 경우를 대비한 방어 코드
-        if (typeof characterData === 'undefined' || !characterData || characterData.length === 0) {
-            resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
-                <h2 class="text-3xl font-bold text-red-400">오류가 발생했습니다</h2>
-                <p class="text-gray-300">캐릭터 데이터가 로드되지 않았습니다. script.js 파일의 characterData 배열을 확인해주세요.</p>
-                <button id="restart-btn-error" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
-            </div>`;
-            showScreen('result-screen');
-            document.getElementById('restart-btn-error').addEventListener('click', () => location.reload());
-            return;
-        }
+function calculateAndShowResult() {
+  // 1) Top3 구하기
+  const top3 = findBestMatches(userAnswers, characterData);
+
+  // 2) 각 카드에 이름/퍼센트 채우기
+  // ── 1등
+  document.getElementById("result1-name").textContent = top3[0].character.name;
+  document.getElementById("result1-pct").textContent  =
+    similarityPct(userAnswers, top3[0].character) + "%";
+
+  // ── 2등
+  document.getElementById("result2-name").textContent = top3[1].character.name;
+  document.getElementById("result2-pct").textContent  =
+    similarityPct(userAnswers, top3[1].character) + "%";
+
+  // ── 3등
+  document.getElementById("result3-name").textContent = top3[2].character.name;
+  document.getElementById("result3-pct").textContent  =
+    similarityPct(userAnswers, top3[2].character) + "%";
+
+  // 3) 결과 화면으로 전환
+  showScreen("result-screen");
+}
 
         const top3Matches = findBestMatches(userAnswers, characterData);
         if (top3Matches.length === 0) return;
 
         const mainResult = top3Matches[0].character;
         const texts = mainResult.texts;
-        const maxDiff = 30 * 4;
+        const maxDiff = TOTAL_Q * 4;
         const similarityPercentage = Math.max(0, 100 - (top3Matches[0].score / maxDiff) * 100).toFixed(0);
 
         const analysisHTML = Object.values(texts.analysis).map(part => `
@@ -875,5 +915,6 @@ document.addEventListener('DOMContentLoaded', () => {
     createPetals();
     showScreen('start-screen');
 );
+
 
 
