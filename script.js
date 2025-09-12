@@ -784,8 +784,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 최종 결과 페이지를 생성하고 보여주는 함수
-    function calculateAndShowResult() {
-        if (typeof characterData === 'undefined' || !characterData || characterData.length < 25) {
+// 최종 결과 페이지를 생성하고 보여주는 함수
+function calculateAndShowResult() {
+    console.log("결과 계산 시작. 현재 userAnswers:", userAnswers);
+    console.log("수집된 답변 개수:", userAnswers.length);
+
+    if (typeof characterData === 'undefined' || !characterData || characterData.length < 25) {
             resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
                 <h2 class="text-3xl font-bold text-red-400">오류가 발생했습니다</h2>
                 <p class="text-gray-300">캐릭터 데이터가 완전하지 않습니다. script.js 파일의 characterData 배열을 다시 확인해주세요.</p>
@@ -874,5 +878,6 @@ scaleBtns.forEach(button => {
 createPetals();
 showScreen('start-screen');
 });
+
 
 
