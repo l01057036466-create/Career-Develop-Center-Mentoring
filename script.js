@@ -625,7 +625,7 @@ const characterData = [
 ];
 
 // ==============================================================
-// STAGE 2 & 3: 로직 및 실행 코드
+// STAGE 2 & 3: 로직 및 실행 코드 (아래 코드로 교체해주세요)
 // ==============================================================
 document.addEventListener('DOMContentLoaded', () => {
     // HTML 요소들을 변수에 할당
@@ -784,15 +784,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 최종 결과 페이지를 생성하고 보여주는 함수
-// 최종 결과 페이지를 생성하고 보여주는 함수
-function calculateAndShowResult() {
-    console.log("결과 계산 시작. 현재 userAnswers:", userAnswers);
-    console.log("수집된 답변 개수:", userAnswers.length);
-
-    if (typeof characterData === 'undefined' || !characterData || characterData.length < 25) {
+    function calculateAndShowResult() {
+        // characterData가 정의되지 않았거나 비어있는 경우를 대비한 방어 코드
+        if (typeof characterData === 'undefined' || !characterData || characterData.length === 0) {
             resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
                 <h2 class="text-3xl font-bold text-red-400">오류가 발생했습니다</h2>
-                <p class="text-gray-300">캐릭터 데이터가 완전하지 않습니다. script.js 파일의 characterData 배열을 다시 확인해주세요.</p>
+                <p class="text-gray-300">캐릭터 데이터가 로드되지 않았습니다. script.js 파일의 characterData 배열을 확인해주세요.</p>
                 <button id="restart-btn-error" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
             </div>`;
             showScreen('result-screen');
@@ -851,33 +848,31 @@ function calculateAndShowResult() {
             </div>`;
         
         document.getElementById('restart-btn').addEventListener('click', () => {
-            // 페이지를 새로고침하는 대신, 상태를 초기화하고 시작 화면으로 돌아갑니다.
             currentQuestionIndex = 0;
             userAnswers = [];
             showScreen('start-screen');
         });
         showScreen('result-screen');
     }
-// --- 이벤트 리스너 설정 ---
-startBtn.addEventListener('click', () => {
-    showScreen('test-screen');
-    currentQuestionIndex = 0;
-    userAnswers = [];
-    showQuestion();
-});
 
-scaleBtns.forEach(button => {
-    button.addEventListener('click', () => {
-        const value = parseInt(button.dataset.value);
-        button.classList.add('selected');
-        setTimeout(() => handleChoice(value), 200);
+    // --- 이벤트 리스너 설정 ---
+    startBtn.addEventListener('click', () => {
+        showScreen('test-screen');
+        currentQuestionIndex = 0;
+        userAnswers = [];
+        showQuestion();
     });
-});
-    
-// 앱 시작 시 꽃잎 생성 및 시작 화면 표시
-createPetals();
-showScreen('start-screen');
-});
 
-
+    scaleBtns.forEach(button => {
+        button.addEventListener('click', () => {
+            const value = parseInt(button.dataset.value);
+            button.classList.add('selected');
+            setTimeout(() => handleChoice(value), 200);
+        });
+    });
+    
+    // 앱 시작 시 꽃잎 생성 및 시작 화면 표시
+    createPetals();
+    showScreen('start-screen');
+});
 
