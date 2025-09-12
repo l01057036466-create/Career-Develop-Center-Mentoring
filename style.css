@@ -1,6 +1,6 @@
 /* ==============================================================
     페르소나 프리즘 검사: 디자인 스타일시트 (style.css)
-    - 테마: 고요한 밤의 등나무 꽃
+    - 테마: 고요한 밤의 등나무 꽃 (최종 수정본)
     - 제작자: 유정 & Gemini
     ==============================================================
 */
@@ -17,10 +17,10 @@ body {
     overflow-x: hidden;
 }
 
-/* --- 문제 해결: 버튼 클릭 문제 & 디자인 --- */
-/* body의 가상요소를 사용해 배경과 꽃잎 레이어를 만듭니다.
-   이렇게 하면 body 내부의 모든 실제 컨텐츠(main 태그)는
-   자연스럽게 배경보다 위에 위치하게 되어 클릭 문제를 원천적으로 해결합니다.
+/* --- 문제 해결 1: 버튼 클릭 문제 ---
+    body의 가상요소(::before, ::after)를 사용해 배경과 꽃잎 레이어를 만듭니다.
+    이렇게 하면 body 내부의 모든 실제 컨텐츠(main 태그)는
+    자연스럽게 배경보다 위에 위치하게 되어 클릭 문제를 원천적으로 해결합니다.
 */
 body::before {
     content: '';
@@ -41,17 +41,18 @@ body::after {
     top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none; /* 클릭 이벤트를 통과시킴 */
     z-index: -1; /* 배경 위, 컨텐츠 아래에 위치 */
-    background: radial-gradient(ellipse at center, rgba(13,12,29,0) 0%, rgba(13,12,29,1) 80%); /* 주변을 어둡게 하는 효과 */
+    background: radial-gradient(ellipse at center, rgba(13,12,29,0) 0%, rgba(13,12,29,1) 80%);
 }
 
-/* --- 새로운 등나무 꽃잎 애니메이션 (단순 낙하) --- */
+/* --- 문제 해결 2: 애니메이션 수정 --- */
 .wisteria-petal {
     position: absolute;
     background-color: #c4b5fd;
     border-radius: 50% 0;
     opacity: 0;
+    /* 좌우 흔들림 없이 오직 아래로만 떨어지도록 수정 */
     animation: fall linear infinite;
-    top: -20px; /* 화면 밖에서 시작 */
+    top: -20px;
 }
 
 @keyframes fall {
@@ -137,4 +138,4 @@ main {
 .radar-line { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
 .radar-polygon { fill: rgba(167, 139, 250, 0.4); stroke: #c4b5fd; stroke-width: 2; }
 .radar-label { fill: #d1d5db; font-size: 14px; text-anchor: middle; font-weight: 600; }
-
+```eof
