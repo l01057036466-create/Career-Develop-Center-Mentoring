@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페르소나 프리즘 | 당신의 검의 길을 찾아라</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 벚꽃 배경 애니메이션 -->
+    <div class="sakura-container"></div>
+
+    <!-- Screen 1: 시작 화면 -->
+    <div id="start-screen" class="screen active-screen flex-col items-center justify-center text-center space-y-8 fade-in">
+        <h1 class="text-5xl md:text-6xl font-bold text-white tracking-wider" style="text-shadow: 0 0 15px #ffb7c5;">너의 호흡은 무엇인가?</h1>
+        <p class="text-lg max-w-2xl text-gray-300">페르소나 프리즘 검사는 30개의 질문을 통해 당신의 성격을 심층 분석하고,<br>당신과 가장 닮은 영혼을 가진 검사를 찾아주는 심리 분석 도구입니다.</p>
+        <button id="start-btn" class="btn-primary text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg">나의 일륜도 찾으러 가기</button>
+    </div>
+
+    <!-- Screen 2: 검사 진행 화면 -->
+    <div id="test-screen" class="screen w-full max-w-4xl flex-col items-center justify-center space-y-8">
+        <div class="w-full">
+            <div class="flex justify-between mb-2">
+                <span class="text-base font-medium text-pink-300" id="part-title"></span>
+                <span id="progress-text" class="text-base font-medium text-gray-300"></span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5">
+                <div id="progress-bar" class="progress-bar-inner h-2.5 rounded-full"></div>
+            </div>
+        </div>
+        <div class="w-full p-8 rounded-lg result-card space-y-6">
+            <p id="scenario-text" class="text-xl text-center text-gray-200 leading-relaxed"></p>
+            <hr class="border-gray-600">
+            <div class="choice-btn-container text-sm md:text-base">
+                <div id="belief-a" class="belief-text text-pink-300"></div>
+                <div class="scale-container">
+                    <div class="scale-item">
+                        <button class="scale-btn" data-value="1">1</button>
+                        <span id="label-1" class="scale-label"></span>
+                    </div>
+                    <div class="scale-item">
+                        <button class="scale-btn" data-value="2">2</button>
+                        <span id="label-2" class="scale-label"></span>
+                    </div>
+                    <div class="scale-item">
+                        <button class="scale-btn" data-value="3">3</button>
+                        <span id="label-3" class="scale-label"></span>
+                    </div>
+                    <div class="scale-item">
+                        <button class="scale-btn" data-value="4">4</button>
+                        <span id="label-4" class="scale-label"></span>
+                    </div>
+                    <div class="scale-item">
+                        <button class="scale-btn" data-value="5">5</button>
+                        <span id="label-5" class="scale-label"></span>
+                    </div>
+                </div>
+                <div id="belief-b" class="belief-text text-sky-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 3: 로딩 화면 -->
+    <div id="loading-screen" class="screen flex-col items-center justify-center text-center space-y-6">
+        <svg class="loading-icon w-20 h-20 text-pink-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p id="loading-text" class="text-xl text-gray-300 tracking-wide">운명의 실이 자아내는 소리를 듣고 있습니다...</p>
+    </div>
+
+    <!-- Screen 4: 결과 화면 -->
+    <div id="result-screen" class="screen w-full max-w-4xl mx-auto flex-col items-center justify-center py-10">
+        <!-- 결과 내용은 JS로 동적 생성 -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
