@@ -872,11 +872,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // 앱 시작 시 꽃잎 생성 및 시작 화면 표시
-    createPetals(); //
+    createPetals();
     showScreen('start-screen');
 });
 
 ```eof
+
 
 
 
