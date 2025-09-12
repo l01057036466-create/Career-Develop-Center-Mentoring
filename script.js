@@ -41,7 +41,7 @@
     { part: "Part 5/5: 바라보는 세계", scenario: "당신이 동료들과 나누고 싶은 대화의 주제는?", belief_a: "삶과 죽음, 인간의 마음 같은 철학적인 주제", belief_b: "다음 임무에 대한 구체적인 전략", labels: ["철학적 담론", "의미 탐구", "균형", "실용적 대화", "오직 전략"] }
 ];
 // STAGE 1: 캐릭터 데이터
-// const characterData = [  id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", 
+// const characterData = [ { id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", 
         image: "https://i.namu.wiki/i/XDxdrDb5EfET9eod7H1StURXE21RMy-DRRAVrvnB14-qsZeKe7HEOhl9XQInz9FzAexvWEQr9T2ZduP6wU6O-y4khafcN1JUvM5_nyDIN_x8rl8kxdkaF_TDF6zwo9LzSxuPZmGDqAeYMSQ3YAe8yQ.webp", 
         scores: [5, 5, 5, 2, 5, 5, 5, 2, 1, 1, 5, 1, 1, 5, 2, 1, 5, 2, 2, 5, 1, 1, 5, 1, 5, 2, 5, 2, 5, 5], 
         texts: { 
@@ -867,4 +867,5 @@ document.addEventListener('DOMContentLoaded', () => {
     createPetals();
     showScreen('start-screen');
 });
+
 ```eof
