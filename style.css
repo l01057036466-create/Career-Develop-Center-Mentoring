@@ -33,7 +33,7 @@ body::before {
     filter: brightness(0.5) blur(3px); /* 배경을 어둡고 은은하게 */
     transform: scale(1.1);
     z-index: -2; /* 가장 뒤 레이어로 설정 */
-     pointer-events: none; /* 👈 이 한 줄을 추가해주세요! */
+     pointer-events: none;
 }
 
 body::after {
@@ -140,6 +140,7 @@ main {
 .radar-polygon { fill: rgba(167, 139, 250, 0.4); stroke: #c4b5fd; stroke-width: 2; }
 .radar-label { fill: #d1d5db; font-size: 14px; text-anchor: middle; font-weight: 600; }
 ```eof
+
 
 
 
