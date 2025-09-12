@@ -53,6 +53,7 @@ body::after {
     /* 좌우 흔들림 없이 오직 아래로만 떨어지도록 수정 */
     animation: fall linear infinite;
     top: -20px;
+    pointer-events: none;
 }
 
 @keyframes fall {
@@ -139,3 +140,4 @@ main {
 .radar-polygon { fill: rgba(167, 139, 250, 0.4); stroke: #c4b5fd; stroke-width: 2; }
 .radar-label { fill: #d1d5db; font-size: 14px; text-anchor: middle; font-weight: 600; }
 ```eof
+
