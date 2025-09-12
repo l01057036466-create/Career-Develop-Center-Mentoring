@@ -854,31 +854,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         showScreen('result-screen');
     }
-
-    // --- 이벤트 리스너 설정 ---
-    startBtn.addEventListener('click', () => {
-        showScreen('test-screen');
-        currentQuestionIndex = 0;
-        userAnswers = [];
-        showQuestion();
-    });
-
-    scaleBtns.forEach(button => {
-        button.addEventListener('click', () => {
-            const value = parseInt(button.dataset.value);
-            button.classList.add('selected');
-            setTimeout(() => handleChoice(value), 200);
-        });
-    });
-    
-    // 앱 시작 시 꽃잎 생성 및 시작 화면 표시
-    createPetals();
-    showScreen('start-screen');
+// --- 이벤트 리스너 설정 ---
+startBtn.addEventListener('click', () => {
+    showScreen('test-screen');
+    currentQuestionIndex = 0;
+    userAnswers = [];
+    showQuestion();
 });
 
-```eof
-
-
-
+scaleBtns.forEach(button => {
+    button.addEventListener('click', () => {
+        const value = parseInt(button.dataset.value);
+        button.classList.add('selected');
+        setTimeout(() => handleChoice(value), 200);
+    });
+});
+    
+// 앱 시작 시 꽃잎 생성 및 시작 화면 표시
+createPetals();
+showScreen('start-screen');
+});
 
 
