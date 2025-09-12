@@ -1,0 +1,140 @@
+/* ==============================================================
+    페르소나 프리즘 검사: 디자인 스타일시트 (style.css)
+    - 테마: 고요한 밤의 등나무 꽃
+    - 제작자: 유정 & Gemini
+    ==============================================================
+*/
+
+/* 폰트 불러오기 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Noto Serif KR', serif;
+    color: #e0e0e0;
+    position: relative;
+    background-color: #0d0c1d; /* 배경 이미지 로딩 전 기본 색상 */
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* --- 문제 해결: 버튼 클릭 문제 & 디자인 --- */
+/* body의 가상요소를 사용해 배경과 꽃잎 레이어를 만듭니다.
+   이렇게 하면 body 내부의 모든 실제 컨텐츠(main 태그)는
+   자연스럽게 배경보다 위에 위치하게 되어 클릭 문제를 원천적으로 해결합니다.
+*/
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* 고화질 등나무 꽃 밤 풍경 이미지 */
+    background-image: url('https://i.pinimg.com/originals/a1/38/a3/a138a37f2d4e3e3b123951111c814674.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.5) blur(3px); /* 배경을 어둡고 은은하게 */
+    transform: scale(1.1);
+    z-index: -2; /* 가장 뒤 레이어로 설정 */
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; /* 클릭 이벤트를 통과시킴 */
+    z-index: -1; /* 배경 위, 컨텐츠 아래에 위치 */
+    background: radial-gradient(ellipse at center, rgba(13,12,29,0) 0%, rgba(13,12,29,1) 80%); /* 주변을 어둡게 하는 효과 */
+}
+
+/* --- 새로운 등나무 꽃잎 애니메이션 (단순 낙하) --- */
+.wisteria-petal {
+    position: absolute;
+    background-color: #c4b5fd;
+    border-radius: 50% 0;
+    opacity: 0;
+    animation: fall linear infinite;
+    top: -20px; /* 화면 밖에서 시작 */
+}
+
+@keyframes fall {
+    0% { transform: translateY(0) rotate(45deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+}
+
+
+/* --- 이하 공통 UI 디자인 --- */
+
+main {
+    position: relative;
+    z-index: 1; /* 모든 컨텐츠가 배경 위에 오도록 설정 */
+}
+
+.screen { display: none; min-height: 100vh; width: 100%; padding: 1rem; }
+.active-screen { display: flex; }
+
+.main-title { 
+    text-shadow: 0 0 20px #c4b5fd, 0 0 30px #a78bfa; 
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #6d28d9, #8b5cf6);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 25px rgba(139, 92, 246, 0.5);
+}
+
+.progress-bar-inner {
+    transition: width 0.5s ease-in-out;
+    background: linear-gradient(90deg, #a78bfa, #c4b5fd);
+}
+
+.result-card {
+    background-color: rgba(20, 18, 31, 0.75); /* 반투명 카드 배경 */
+    border: 1px solid #4a3a6a; /* 테두리 색 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.choice-btn-container { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.belief-text-container { display: flex; justify-content: space-between; width: 100%; }
+.belief-text { flex: 1; text-align: center; font-weight: 600; }
+.belief-a-color { color: #c4b5fd; }
+.belief-b-color { color: #a5f3fc; }
+
+.scale-container { display: flex; justify-content: center; gap: 0.5rem; width: 100%; }
+.scale-item { display: flex; flex-direction: column; align-items: center; text-align: center; flex: 1; }
+.scale-btn {
+    border: 2px solid #37304a;
+    transition: all 0.2s ease;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-color: rgba(30, 27, 43, 0.5);
+    font-weight: 700;
+    font-size: 1rem;
+}
+.scale-btn:hover, .scale-btn.selected {
+    background-color: #8b5cf6;
+    border-color: #c4b5fd;
+    transform: scale(1.1);
+}
+.scale-label { margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af; font-weight: 400; line-height: 1.2; height: 3em; }
+
+.fade-in { animation: fadeIn 1.2s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.loading-icon { animation: spin 1.5s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.radar-chart-container { position: relative; width: 300px; height: 300px; }
+.radar-chart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.radar-line { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
+.radar-polygon { fill: rgba(167, 139, 250, 0.4); stroke: #c4b5fd; stroke-width: 2; }
+.radar-label { fill: #d1d5db; font-size: 14px; text-anchor: middle; font-weight: 600; }
+
