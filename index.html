@@ -6,12 +6,13 @@
     <title>페르소나 프리즘 | 당신의 검의 길을 찾아라</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* CSS 시작 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap');
 
         body {
             font-family: 'Noto Serif KR', serif;
-            background-color: #14121f;
-            color: #e0e0e0;
+            background-color: #1a1820; /* 어둡고 깊은 보라색 배경 */
+            color: #d1d5db; /* 눈이 편안한 연한 회색 텍스트 */
             overflow-y: auto;
             position: relative;
             background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
@@ -25,18 +26,14 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: -1;
+            z-index: 0;
             overflow: hidden;
+            opacity: 0.6; /* 은은하게 보이도록 투명도 조절 */
         }
 
         @keyframes fall {
             0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) translateX(5vw) rotate(360deg); opacity: 0; }
-        }
-
-        @keyframes sway {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(30px); }
+            100% { transform: translateY(110vh) translateX(5vw) rotate(270deg); opacity: 0; }
         }
 
         /* SVG Wisteria Petal */
@@ -46,68 +43,45 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path fill="%23a78bfa" d="M20,0 C30,0 40,10 40,20 C40,30 30,40 20,40 C10,40 0,30 0,20 C0,10 10,0 20,0 Z" transform="scale(0.5, 1) rotate(30)"/></svg>');
-            background-size: 12px;
-            animation: fall 20s linear infinite, sway 4s ease-in-out infinite;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path fill="%23C4B5FD" d="M20,0 C30,0 40,10 40,20 C40,30 30,40 20,40 C10,40 0,30 0,20 C0,10 10,0 20,0 Z" transform="scale(0.4, 0.8) rotate(30)"/></svg>');
+            background-size: 10px;
+            animation: fall 25s linear infinite;
             top: -10%;
-            opacity: 0.7;
         }
 
         .wisteria-container::after {
-            animation-delay: -10s;
-            animation-duration: 18s;
-            background-size: 9px;
+            animation-delay: -12s;
+            animation-duration: 22s;
+            background-size: 7px;
             left: 20%;
         }
 
         /* 나머지 스타일 */
         .screen { display: none; min-height: 100vh; position: relative; z-index: 1; width: 100%; padding: 1rem; }
         .active-screen { display: flex; }
+        .main-title { text-shadow: 0 0 15px #c4b5fd; }
         .btn-primary {
             background: linear-gradient(45deg, #8b5cf6, #a78bfa);
             transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
         }
         .btn-primary:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 7px 25px rgba(139, 92, 246, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 25px rgba(139, 92, 246, 0.5);
         }
         .progress-bar-inner {
             transition: width 0.5s ease-in-out;
-            background: linear-gradient(90deg, #c4b5fd, #a78bfa);
+            background: linear-gradient(90deg, #a78bfa, #c4b5fd);
         }
-        .choice-btn-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .belief-text-container {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .belief-text {
-            flex: 1;
-            text-align: center;
-            font-weight: 600;
-            color: #ddd6fe;
-        }
-        .scale-container {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            width: 100%;
-        }
-        .scale-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            flex: 1;
-        }
+        .choice-btn-container { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+        .belief-text-container { display: flex; justify-content: space-between; width: 100%; }
+        .belief-text { flex: 1; text-align: center; font-weight: 600; }
+        .belief-a-color { color: #c4b5fd; }
+        .belief-b-color { color: #a5f3fc; }
+        .scale-container { display: flex; justify-content: center; gap: 0.5rem; width: 100%; }
+        .scale-item { display: flex; flex-direction: column; align-items: center; text-align: center; flex: 1; }
         .scale-btn {
-            border: 2px solid #4a4a68;
+            border: 2px solid #37304a;
             transition: all 0.2s ease;
             width: 48px;
             height: 48px;
@@ -115,7 +89,7 @@
             align-items: center;
             justify-content: center;
             border-radius: 9999px;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(30, 27, 43, 0.5);
             font-weight: 700;
             font-size: 1rem;
         }
@@ -124,60 +98,50 @@
             border-color: #c4b5fd;
             transform: scale(1.1);
         }
-        .scale-label {
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            color: #9ca3af;
-            font-weight: 400;
-            line-height: 1.2;
-            height: 3em; /* 2-3줄의 텍스트를 위한 공간 확보 */
-        }
+        .scale-label { margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af; font-weight: 400; line-height: 1.2; height: 3em; }
         .fade-in { animation: fadeIn 1s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .loading-icon { animation: spin 1.5s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .result-card {
-            background-color: rgba(20, 18, 31, 0.7);
-            border: 1px solid #4a4a68;
+            background-color: rgba(26, 24, 32, 0.7);
+            border: 1px solid #37304a;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
         .radar-chart-container { position: relative; width: 300px; height: 300px; }
         .radar-chart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .radar-line { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
-        .radar-polygon { fill: rgba(167, 139, 250, 0.5); stroke: #a78bfa; stroke-width: 2; }
-        .radar-label { fill: #e0e0e0; font-size: 14px; text-anchor: middle; font-weight: 600; }
+        .radar-polygon { fill: rgba(167, 139, 250, 0.4); stroke: #c4b5fd; stroke-width: 2; }
+        .radar-label { fill: #d1d5db; font-size: 14px; text-anchor: middle; font-weight: 600; }
     </style>
 </head>
 <body class="w-full min-h-screen flex items-center justify-center">
-    <!-- 등나무 꽃 배경 애니메이션 -->
     <div class="wisteria-container"></div>
 
-    <!-- Screen 1: 시작 화면 -->
     <div id="start-screen" class="screen active-screen flex-col items-center justify-center text-center space-y-8 fade-in">
-        <h1 class="text-5xl md:text-6xl font-bold text-white tracking-wider" style="text-shadow: 0 0 15px #a78bfa;">너의 호흡은 무엇인가?</h1>
+        <h1 class="text-5xl md:text-6xl font-bold text-white tracking-wider main-title">너의 호흡은 무엇인가?</h1>
         <p class="text-lg max-w-2xl text-gray-300">페르소나 프리즘 검사는 30개의 질문을 통해 당신의 성격을 심층 분석하고,<br>당신과 가장 닮은 영혼을 가진 검사를 찾아주는 심리 분석 도구입니다.</p>
         <button id="start-btn" class="btn-primary text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg">나의 일륜도 찾으러 가기</button>
     </div>
 
-    <!-- Screen 2: 검사 진행 화면 -->
     <div id="test-screen" class="screen w-full max-w-4xl flex-col items-center justify-center space-y-8">
         <div class="w-full">
             <div class="flex justify-between mb-2">
                 <span class="text-base font-medium text-violet-300" id="part-title"></span>
                 <span id="progress-text" class="text-base font-medium text-gray-300"></span>
             </div>
-            <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div class="w-full bg-gray-800 rounded-full h-2.5">
                 <div id="progress-bar" class="progress-bar-inner h-2.5 rounded-full"></div>
             </div>
         </div>
         <div class="w-full p-8 rounded-lg result-card space-y-6">
             <p id="scenario-text" class="text-xl text-center text-gray-200 leading-relaxed"></p>
-            <hr class="border-gray-600">
+            <hr class="border-gray-700">
             <div class="choice-btn-container">
                  <div class="belief-text-container">
-                    <div id="belief-a" class="belief-text text-violet-300"></div>
-                    <div id="belief-b" class="belief-text text-sky-300"></div>
+                    <div id="belief-a" class="belief-text belief-a-color"></div>
+                    <div id="belief-b" class="belief-text belief-b-color"></div>
                 </div>
                 <div class="scale-container">
                     <div class="scale-item">
@@ -205,7 +169,6 @@
         </div>
     </div>
 
-    <!-- Screen 3: 로딩 화면 -->
     <div id="loading-screen" class="screen flex-col items-center justify-center text-center space-y-6">
         <svg class="loading-icon w-20 h-20 text-violet-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -214,15 +177,15 @@
         <p id="loading-text" class="text-xl text-gray-300 tracking-wide">운명의 실이 자아내는 소리를 듣고 있습니다...</p>
     </div>
 
-    <!-- Screen 4: 결과 화면 -->
     <div id="result-screen" class="screen w-full max-w-4xl mx-auto flex-col items-center justify-start py-10">
-        <!-- 결과 내용은 JS로 동적 생성 -->
-    </div>
-
+        </div>
+    
     <script>
     // ==============================================================
-    // STAGE 0: 질문 데이터 (시나리오 + 척도별 의미 부여)
+    // JAVASCRIPT 시작
     // ==============================================================
+    
+    // STAGE 0: 질문 데이터 (시나리오 + 척도별 의미 부여)
     const questions = [
         // Part 1: 근본 기질 (6개)
         { part: "Part 1/5: 너의 호흡의 근원", scenario: "까마귀의 울음소리가 그치고 찾아온 휴일. 등나무 꽃 향기 가득한 방에서 어떻게 재충전하고 싶나요?", belief_a: "혼자 조용히 명상하며 호흡을 가다듬는다", belief_b: "나비 저택의 동료들과 웃고 떠들며 시간을 보낸다", labels: ["완전한 고독", "소수와의 대화", "상황에 따라", "만남이 좋음", "왁자지껄한 파티"] },
@@ -264,14 +227,13 @@
         { part: "Part 5/5: 바라보는 세계", scenario: "적이라 할지라도, 그가 왜 오니가 될 수밖에 없었는지 슬픈 사연을 듣게 된다면?", belief_a: "깊은 연민을 느끼고 그의 운명에 대해 생각하게 될 것이다", belief_b: "그것은 개인의 사정일 뿐, 동정의 여지가 없다", labels: ["깊은 공감", "연민", "이해 시도", "냉정한 분리", "완전한 무시"] },
         { part: "Part 5/5: 바라보는 세계", scenario: "당신이 동료들과 나누고 싶은 대화의 주제는?", belief_a: "삶과 죽음, 인간의 마음 같은 철학적인 주제", belief_b: "다음 임무에 대한 구체적인 전략", labels: ["철학적 담론", "의미 탐구", "균형", "실용적 대화", "오직 전략"] }
     ];
-
     // ==============================================================
     // STAGE 1: 캐릭터 데이터 (원작 관계 반영)
     // ==============================================================
     const characterData = [
         // 글자 수 제한으로 인해 예시 데이터만 남깁니다.
         // 이전 답변에서 제공한 25명의 characterData 전체를 여기에 복사해서 붙여넣어야 합니다.
-      { id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", image: "https://i.namu.wiki/i/XDxdrDb5EfET9eod7H1StURXE21RMy-DRRAVrvnB14-qsZeKe7HEOhl9XQInz9FzAexvWEQr9T2ZduP6wU6O-y4khafcN1JUvM5_nyDIN_x8rl8kxdkaF_TDF6zwo9LzSxuPZmGDqAeYMSQ3YAe8yQ.webp", scores: [5, 5, 5, 2, 5, 5, 5, 2, 1, 1, 5, 1, 1, 5, 4, 1, 5, 4, 2, 5, 1, 1, 5, 1, 5, 2, 5, 2, 5, 5], 
+      { id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", image: "https://i.namu.wiki/i/XDxdrDb5EfET9eod7H1StURXE21RMy-DRRAVrvnB14-qsZeKe7HEOhl9XQInz9FzAexvWEQr9T2ZduP6wU6O-y4khafcN1JUvM5_nyDIN_x8rl8kxdkaF_TDF6zwo9LzSxuPZmGDqAeYMSQ3YAe8yQ.webp", scores: [5, 5, 5, 2, 5, 5, 5, 2, 1, 1, 5, 1, 1, 5, 2, 1, 5, 2, 2, 5, 1, 1, 5, 1, 5, 2, 5, 2, 5, 5], 
         texts: { 
             analysis: { 
                 part1: { title: "호흡의 근원(根本): 태양처럼 따뜻한 물의 호흡", desc: "당신의 힘은 **태양처럼 따뜻한 마음**에서 비롯됩니다. 혼자 있을 때보다 동료들과의 **유대(絆)** 속에서 호흡이 가다듬어지고, 그 관계를 통해 더욱 강해지는군요. 당신의 눈은 탄지로처럼 사물의 본질을 꿰뚫어, 절망 속에서도 승리로 이어지는 **'틈새의 실'**을 발견해내는 힘을 가졌습니다." },
@@ -283,16 +245,254 @@
             chemistry: { romance: { name: "츠유리 카나오", desc: "당신의 따뜻함과 굳은 의지는 닫혀있는 사람의 마음을 열게 하는 힘이 있습니다. 당신의 헌신적인 사랑을 깊이 이해하고, 조용히 곁을 지키며 함께 성장할 수 있는 사람과 가장 이상적인 관계를 맺을 수 있습니다." }, friendship: { name: "렌고쿠 쿄쥬로", desc: "당신의 긍정적인 에너지와 올곧은 신념은, 불꽃처럼 뜨거운 열정을 가진 사람과 만났을 때 엄청난 시너지를 냅니다. 서로를 믿고 격려하며, 더 높은 목표를 향해 함께 나아가는 최고의 동료가 될 수 있습니다." }, caution: { name: "키부츠지 무잔", desc: "당신의 이타심과 신뢰를 자신의 이익을 위해 이용하려는 사람을 가장 경계해야 합니다. 생명의 가치를 경시하고 타인을 도구로 여기는 유형과는 근본적으로 가치관이 충돌하여 큰 상처를 받을 수 있습니다." }},
             mentoring: { role: "성장형 멘티이자, 동료를 이끄는 멘토", desc: "당신은 아직 배우고 성장할 부분이 많은 **훌륭한 '멘티'의 자질**을 가지고 있습니다. 특히 확고한 신념과 풍부한 경험을 가진 멘토를 만났을 때, 그 가르침을 스펀지처럼 흡수하여 자신의 것으로 만들 수 있습니다. 동시에, 당신은 동료들의 마음을 보듬고 그들의 가능성을 믿어주는 **'수평적 멘토'**의 역할에도 매우 적합합니다. 당신의 공감과 격려는 때로 스승의 가르침보다 더 큰 힘을 발휘할 수 있습니다." }
         }},
-        // ... 여기에 나머지 24명의 캐릭터 데이터를 모두 붙여넣어야 합니다.
+        // ... 여기에 나머지 24명의 캐릭터 데이터와 텍스트를 모두 붙여넣어야 합니다.
     ];
-
     // ==============================================================
     // STAGE 2 & 3: 로직 및 실행 코드
     // ==============================================================
     document.addEventListener('DOMContentLoaded', () => {
-        // ... 여기에 이전 답변의 JS 로직 전체를 붙여넣어야 합니다.
+        const screens = document.querySelectorAll('.screen');
+        const startBtn = document.getElementById('start-btn');
+        const partTitle = document.getElementById('part-title');
+        const scenarioText = document.getElementById('scenario-text');
+        const beliefA = document.getElementById('belief-a');
+        const beliefB = document.getElementById('belief-b');
+        const scaleBtns = document.querySelectorAll('.scale-btn');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+        const resultScreen = document.getElementById('result-screen');
+        const labelElements = [
+            document.getElementById('label-1'),
+            document.getElementById('label-2'),
+            document.getElementById('label-3'),
+            document.getElementById('label-4'),
+            document.getElementById('label-5')
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+
+        function showScreen(screenId) {
+            screens.forEach(screen => screen.classList.remove('active-screen'));
+            document.getElementById(screenId).classList.add('active-screen');
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const q = questions[currentQuestionIndex];
+                partTitle.textContent = q.part;
+                scenarioText.textContent = `Q${currentQuestionIndex + 1}. ${q.scenario}`;
+                beliefA.textContent = q.belief_a;
+                beliefB.textContent = q.belief_b;
+
+                q.labels.forEach((label, index) => {
+                    if (labelElements[index]) {
+                        labelElements[index].innerHTML = label.replace(" ", "<br>");
+                    }
+                });
+
+                progressText.textContent = `${currentQuestionIndex + 1} / ${questions.length}`;
+                progressBar.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
+                scaleBtns.forEach(btn => btn.classList.remove('selected'));
+            } else {
+                showLoadingAndCalculate();
+            }
+        }
+
+        function handleChoice(value) {
+            userAnswers.push(value);
+            currentQuestionIndex++;
+            showQuestion();
+        }
+        
+        function showLoadingAndCalculate() {
+            showScreen('loading-screen');
+            const loadingMessages = ["운명의 실이 자아내는 소리를 듣고 있습니다...", "당신의 호흡을 분석하는 중...", "당신과 가장 닮은 영혼을 찾는 중..."];
+            let msgIndex = 0;
+            loadingText.textContent = loadingMessages[msgIndex];
+            const interval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % loadingMessages.length;
+                loadingText.textContent = loadingMessages[msgIndex];
+            }, 1500);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                calculateAndShowResult();
+            }, 4500);
+        }
+
+        function calculateSimilarity(userScores, characterProfile) {
+          if (!characterProfile || !characterProfile.scores) return Infinity;
+          if (userScores.length !== characterProfile.scores.length) {
+            return Infinity;
+          }
+          let totalDifference = 0;
+          for (let i = 0; i < userScores.length; i++) {
+            totalDifference += Math.abs(userScores[i] - characterProfile.scores[i]);
+          }
+          return totalDifference;
+        }
+
+        function findBestMatches(userScores, allCharacters) {
+            if (!allCharacters || allCharacters.length === 0) return [];
+            const results = allCharacters.map(character => ({
+                score: calculateSimilarity(userScores, character),
+                character: character
+            }));
+            results.sort((a, b) => a.score - b.score);
+            return results.slice(0, 3);
+        }
+        
+        function generateRadarChart(userScores) {
+            const size = 300;
+            const center = size / 2;
+            const radius = center * 0.8;
+            const labels = ["기질", "내면", "판단", "가면", "개방성"];
+            
+            const getUserPoints = (scores) => {
+                const points = [];
+                const totalScores = [0, 0, 0, 0, 0];
+                if (!scores || scores.length !== 30) return "";
+                for (let i = 0; i < 30; i++) {
+                    const partIndex = Math.floor(i / 6);
+                    totalScores[partIndex] += scores[i];
+                }
+                const maxPartScore = 6 * 5; 
+                const minPartScore = 6 * 1;
+                const normalizedScores = totalScores.map(score => (score - minPartScore) / (maxPartScore - minPartScore));
+
+                for (let i = 0; i < 5; i++) {
+                    const angle = (Math.PI * 2 * i) / 5 - (Math.PI / 2);
+                    const x = center + radius * normalizedScores[i] * Math.cos(angle);
+                    const y = center + radius * normalizedScores[i] * Math.sin(angle);
+                    points.push(`${x},${y}`);
+                }
+                return points.join(' ');
+            }
+
+            const userPoints = getUserPoints(userScores);
+            
+            let axisLines = '';
+            let axisLabels = '';
+            for (let i = 0; i < 5; i++) {
+                const angle = (Math.PI * 2 * i) / 5 - (Math.PI / 2);
+                const x2 = center + radius * Math.cos(angle);
+                const y2 = center + radius * Math.sin(angle);
+                axisLines += `<line class="radar-line" x1="${center}" y1="${center}" x2="${x2}" y2="${y2}"></line>`;
+                const lx = center + (radius + 25) * Math.cos(angle);
+                const ly = center + (radius + 25) * Math.sin(angle);
+                axisLabels += `<text class="radar-label" x="${lx}" y="${ly}" dy="5">${labels[i]}</text>`;
+            }
+
+            return `
+                <div class="radar-chart-container mx-auto">
+                    <svg class="radar-chart" viewBox="0 0 ${size} ${size}">
+                        ${axisLines}
+                        <polygon class="radar-polygon" points="${userPoints}"></polygon>
+                        ${axisLabels}
+                    </svg>
+                </div>
+            `;
+        }
+
+        function calculateAndShowResult() {
+            if (!characterData || characterData.length < 1 || !characterData[0].texts) {
+                resultScreen.innerHTML = `<div class="text-white text-center p-8 result-card rounded-lg"><h2>오류</h2><p>캐릭터 데이터가 완전하지 않습니다. script.js 파일에 모든 캐릭터 데이터를 붙여넣었는지 확인해주세요.</p></div>`;
+                showScreen('result-screen');
+                return;
+            }
+
+            const top3Matches = findBestMatches(userAnswers, characterData);
+            if (top3Matches.length === 0) return;
+
+            const mainResult = top3Matches[0].character;
+            const texts = mainResult.texts;
+
+            const maxDiff = 30 * 4; 
+            const similarityPercentage = Math.max(0, 100 - (top3Matches[0].score / maxDiff) * 100).toFixed(0);
+
+            const analysisHTML = Object.values(texts.analysis).map(part => `
+                <div class="text-left space-y-2 p-4 border-b border-gray-700 last:border-b-0">
+                    <h4 class="text-xl font-semibold text-violet-300">${part.title}</h4>
+                    <p class="text-gray-300 leading-relaxed">${part.desc.replace(/\*\*(.*?)\*\*/g, '<strong class="text-violet-200">$1</strong>')}</p>
+                </div>
+            `).join('');
+            
+            resultScreen.innerHTML = `
+                <div class="w-full text-center fade-in space-y-10">
+                    <div class="space-y-4">
+                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-wider" style="text-shadow: 0 0 10px #a78bfa;">당신의 영혼과 가장 닮은 검사는...</h1>
+                        <div class="flex flex-col md:flex-row items-center justify-center gap-8 p-6 rounded-lg result-card">
+                            <img src="${mainResult.image}" alt="${mainResult.name}" class="w-48 h-48 rounded-full border-4 border-violet-400 object-cover shadow-lg">
+                            <div class="text-left space-y-2">
+                                <h2 class="text-4xl font-bold text-violet-300">${mainResult.name}</h2>
+                                <p class="text-xl text-gray-300">${mainResult.type}</p>
+                                <p class="text-lg text-gray-300">성격 일치율: <span class="font-bold text-violet-300">${similarityPercentage}%</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 rounded-lg result-card space-y-4">
+                        <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">페르소나 프리즘 심층 분석</h3>
+                        ${generateRadarChart(userAnswers)}
+                        <div class="mt-4">${analysisHTML}</div>
+                    </div>
+                    
+                    <div class="p-6 rounded-lg result-card space-y-4">
+                         <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">관계 케미 분석</h3>
+                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                            <div class="p-4 rounded bg-black bg-opacity-20">
+                                <h4 class="text-xl font-semibold text-red-400">❤️ 연인 케미</h4>
+                                <p class="font-bold mt-1">${texts.chemistry.romance.name} 유형</p>
+                                <p class="text-sm text-gray-400 mt-2">${texts.chemistry.romance.desc}</p>
+                            </div>
+                            <div class="p-4 rounded bg-black bg-opacity-20">
+                                <h4 class="text-xl font-semibold text-yellow-400">⭐ 우정 케미</h4>
+                                <p class="font-bold mt-1">${texts.chemistry.friendship.name} 유형</p>
+                                <p class="text-sm text-gray-400 mt-2">${texts.chemistry.friendship.desc}</p>
+                            </div>
+                            <div class="p-4 rounded bg-black bg-opacity-20">
+                                <h4 class="text-xl font-semibold text-sky-400">⚠️ 주의 케미</h4>
+                                <p class="font-bold mt-1">${texts.chemistry.caution.name} 유형</p>
+                                <p class="text-sm text-gray-400 mt-2">${texts.chemistry.caution.desc}</p>
+                            </div>
+                         </div>
+                    </div>
+
+                    <div class="p-6 rounded-lg result-card space-y-4 text-left">
+                         <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2">멘토링 잠재력 분석</h3>
+                         <h4 class="text-xl font-semibold text-violet-300">${texts.mentoring.role}</h4>
+                         <p class="text-gray-300 leading-relaxed">${texts.mentoring.desc.replace(/\*\*(.*?)\*\*/g, '<strong class="text-violet-200">$1</strong>')}</p>
+                    </div>
+                </div>
+            `;
+            showScreen('result-screen');
+        }
+
+        // 초기화 및 이벤트 리스너
+        startBtn.addEventListener('click', () => {
+            showScreen('test-screen');
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            showQuestion();
+        });
+
+        scaleBtns.forEach(button => {
+            button.addEventListener('click', () => {
+                const value = parseInt(button.dataset.value);
+                button.classList.add('selected');
+                setTimeout(() => handleChoice(value), 200);
+            });
+        });
+
+        // 앱 시작
+        if (characterData.length > 0) {
+            showScreen('start-screen');
+        } else {
+            document.body.innerHTML = `<div class="text-white text-center p-8">오류: 캐릭터 데이터가 비어 있습니다. script.js 파일의 characterData 배열을 확인해주세요.</div>`;
+        }
     });
     </script>
 </body>
 </html>
-
