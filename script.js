@@ -1,6 +1,6 @@
 // ==============================================================
 // STAGE 0: 질문 데이터
-// const questions = [// Part 1: 근본 기질 (6개)
+ const questions = [// Part 1: 근본 기질 (6개)
     { part: "Part 1/5: 너의 호흡의 근원", scenario: "까마귀의 울음소리가 그치고 찾아온 휴일. 등나무 꽃 향기 가득한 방에서 어떻게 재충전하고 싶나요?", belief_a: "혼자 조용히 명상하며 호흡을 가다듬는다", belief_b: "나비 저택의 동료들과 웃고 떠들며 시간을 보낸다", labels: ["완전한 고독", "소수와의 대화", "상황에 따라", "만남이 좋음", "왁자지껄한 파티"] },
     { part: "Part 1/5: 너의 호흡의 근원", scenario: "새로운 임무가 내려왔다. 당신은 지도를 펼치고 무엇부터 확인할 건가요?", belief_a: "오니의 출몰 기록, 지형 등 구체적인 사실", belief_b: "임무에 숨겨진 진정한 의미와 가능성", labels: ["오직 팩트", "현실 중심", "균형", "의미 탐색", "거대한 그림"] },
     { part: "Part 1/5: 너의 호흡의 근원", scenario: "처음 소집된 주합 회의, 어색한 분위기 속에서 당신의 모습은?", belief_a: "다른 이들이 먼저 말하길 기다린다", belief_b: "먼저 말을 걸며 대화의 물꼬를 튼다", labels: ["침묵 속 관찰", "소극적 참여", "눈치 보기", "적극적 대화", "분위기 주도"] },
@@ -41,7 +41,7 @@
     { part: "Part 5/5: 바라보는 세계", scenario: "당신이 동료들과 나누고 싶은 대화의 주제는?", belief_a: "삶과 죽음, 인간의 마음 같은 철학적인 주제", belief_b: "다음 임무에 대한 구체적인 전략", labels: ["철학적 담론", "의미 탐구", "균형", "실용적 대화", "오직 전략"] }
 ];
 // STAGE 1: 캐릭터 데이터
-// const characterData = [ { id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", 
+ const characterData = [ { id: 1, name: "카마도 탄지로", type: "태양처럼 따뜻한 마음을 지닌 노력가", 
         image: "https://i.namu.wiki/i/XDxdrDb5EfET9eod7H1StURXE21RMy-DRRAVrvnB14-qsZeKe7HEOhl9XQInz9FzAexvWEQr9T2ZduP6wU6O-y4khafcN1JUvM5_nyDIN_x8rl8kxdkaF_TDF6zwo9LzSxuPZmGDqAeYMSQ3YAe8yQ.webp", 
         scores: [5, 5, 5, 2, 5, 5, 5, 2, 1, 1, 5, 1, 1, 5, 2, 1, 5, 2, 2, 5, 1, 1, 5, 1, 5, 2, 5, 2, 5, 5], 
         texts: { 
@@ -869,3 +869,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 ```eof
+
