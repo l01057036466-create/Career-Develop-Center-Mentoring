@@ -221,10 +221,10 @@
             mentoring: { 
                 role: "지식과 의지를 계승하는 멘토", 
                 desc: "당신은 뛰어난 의학 지식과 냉철한 판단력을 가르치는 **훌륭한 멘토**입니다. 당신은 멘티에게 기술뿐만 아니라, 자신의 목숨을 걸고서라도 목표를 이루어내겠다는 **강인한 '의지'**를 물려줍니다. 당신의 가르침을 받은 멘티(카나오)는 당신의 꿈과 분노를 이어받아, 당신이 열어둔 길을 완성하게 될 것입니다." 
-            }
+          }
         }
     },
- { 
+    { 
         id: 9, name: "우즈이 텐겐", type: "누구보다 화려하게 생명의 가치를 지키는 축제의 신", 
         image: "https://i.namu.wiki/i/CWXL0d8ayNZgQVoCTU6FXZPU3ILoSOml5G83Pq3VaZGnZ0ob2iGfM_i4ocva0evhWeR9ET9ONUbjkZlG8sLzXZF6ZwuZhCrq2aYeekXEe5KdrYQJuZxgru2o-bcPEx--hoVYuwR50SlEoHlcA2bCTw.webp", 
         scores: [5, 3, 5, 3, 5, 2, 5, 3, 5, 2, 5, 2, 4, 5, 5, 5, 4, 5, 2, 3, 4, 3, 3, 5, 4, 3, 4, 2, 3, 3], 
@@ -869,4 +869,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 ```eof
+
 
