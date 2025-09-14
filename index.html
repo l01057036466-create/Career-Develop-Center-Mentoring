@@ -901,375 +901,358 @@ const characterData = [
         }
     }
 ];
+/* ==============================================================
+   STAGE 1: 상태 & 엘리먼트 캐시
+============================================================== */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+const startScreen   = $('#start-screen');
+const testScreen    = $('#test-screen');
+const loadingScreen = $('#loading-screen');
+const resultScreen  = $('#result-screen');
 
-        // ==============================================================
-        // STAGE 1: 요소 및 변수 초기화
-        // ==============================================================
-        const appContainer = document.getElementById('app-container');
-        const screens = document.querySelectorAll('.screen');
-        const startBtn = document.getElementById('start-btn');
-        const partTitle = document.getElementById('part-title');
-        const scenarioText = document.getElementById('scenario-text');
-        const beliefA = document.getElementById('belief-a');
-        const beliefB = document.getElementById('belief-b');
-        const scaleBtns = document.querySelectorAll('.scale-btn');
-        const progressText = document.getElementById('progress-text');
-        const progressBar = document.getElementById('progress-bar');
-        const loadingText = document.getElementById('loading-text');
-        const resultScreen = document.getElementById('result-screen');
-        const petalContainer = document.getElementById('wisteria-container');
-        const labelElements = Array.from({length: 5}, (_, i) => document.getElementById(`label-${i + 1}`));
+const startBtn      = $('#start-btn');
 
-        let currentQuestionIndex = 0;
-        let userAnswers = [];
-        
-        // ==============================================================
-        // STAGE 2: 핵심 함수 정의
-        // ==============================================================
+const partTitle     = $('#part-title');
+const progressText  = $('#progress-text');
+const progressBar   = $('#progress-bar');
 
-        // 등나무 꽃잎을 생성하는 함수
-        function createPetals() {
-            petalContainer.innerHTML = ''; // 기존 꽃잎 제거
-            for (let i = 0; i < 15; i++) {
-                const petal = document.createElement('div');
-                petal.className = 'wisteria-petal';
-                petal.style.left = `${Math.random() * 100}vw`;
-                petal.style.width = `${Math.random() * 5 + 5}px`;
-                petal.style.height = `${Math.random() * 8 + 8}px`;
-                petal.style.animationDuration = `${Math.random() * 10 + 15}s`;
-                petal.style.animationDelay = `${Math.random() * 10}s`;
-                petalContainer.appendChild(petal);
-            }
-        }
+const scenarioText  = $('#scenario-text');
+const beliefAEl     = $('#belief-a');
+const beliefBEl     = $('#belief-b');
+const labelEls      = [$('#label-1'), $('#label-2'), $('#label-3'), $('#label-4'), $('#label-5')];
+const scaleBtns     = $$('.scale-btn');
 
-        // 특정 화면을 보여주는 함수
-        function showScreen(screenId) {
-            screens.forEach(screen => screen.classList.remove('active-screen'));
-            document.getElementById(screenId).classList.add('active-screen');
-        }
+const petalsLayer   = $('#wisteria-container');
 
-        // 현재 질문을 화면에 표시하는 함수
-        function showQuestion() {
-            if (currentQuestionIndex < questions.length) {
-                const q = questions[currentQuestionIndex];
-                partTitle.textContent = q.part;
-                scenarioText.textContent = `Q${currentQuestionIndex + 1}. ${q.scenario}`;
-                beliefA.textContent = q.belief_a;
-                beliefB.textContent = q.belief_b;
-                q.labels.forEach((label, index) => {
-                    if (labelElements[index]) {
-                        labelElements[index].innerHTML = label.replace(" ", "<br>");
-                    }
-                });
-                progressText.textContent = `${currentQuestionIndex + 1} / ${questions.length}`;
-                progressBar.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
-                scaleBtns.forEach(btn => btn.classList.remove('selected'));
-            } else {
-                showLoadingAndCalculate();
-            }
-        }
+const TOTAL = questions.length;           // 30
+const PART_SIZE = 6;                      // 6문항/파트
+const PART_LABELS = ['근원', '내면', '대처', '방식', '세계'];
+const loadingLines = [
+  '운명의 실이 자아내는 소리를 듣고 있습니다…',
+  '호흡을 가다듬는 중… 전집중・상중',
+  '등나무 향기 속에 틈새의 실을 찾는 중…',
+  '주합회의 기록을 불러오는 중…',
+  '검의 길과 마음의 칼집을 정렬하는 중…'
+];
 
-        // 사용자의 답변을 처리하는 함수
-        function handleChoice(value) {
-            userAnswers.push(value);
-            currentQuestionIndex++;
-            showQuestion();
-        }
-        
-        // 로딩 화면을 보여주고 결과를 계산하는 함수
-        function showLoadingAndCalculate() {
-            showScreen('loading-screen');
-            const loadingMessages = ["운명의 실이 자아내는 소리를 듣고 있습니다...", "당신의 호흡을 분석하는 중...", "당신과 가장 닮은 영혼을 찾는 중..."];
-            let msgIndex = 0;
-            loadingText.textContent = loadingMessages[msgIndex];
-            const interval = setInterval(() => {
-                msgIndex = (msgIndex + 1) % loadingMessages.length;
-                loadingText.textContent = loadingMessages[msgIndex];
-            }, 1500);
+let idx = 0;
+let answers = [];        // [1..5] * 30
+let locking = false;
 
-            setTimeout(() => {
-                clearInterval(interval);
-                calculateAndShowResult();
-            }, 4500);
-        }
-
-        // 답변과 캐릭터 데이터의 유사도를 계산하는 함수
-        function calculateSimilarity(userScores, characterProfile) {
-          if (!characterProfile || !characterProfile.scores) return Infinity;
-          if (userScores.length !== characterProfile.scores.length) return Infinity;
-          let totalDifference = 0;
-          userScores.forEach((score, i) => {
-            totalDifference += Math.abs(score - characterProfile.scores[i]);
-          });
-          return totalDifference;
-        }
-
-        // 가장 유사한 캐릭터를 찾는 함수
-        function findBestMatch(userScores, allCharacters) {
-            let bestMatch = { score: Infinity, character: null };
-            allCharacters.forEach(character => {
-                const score = calculateSimilarity(userScores, character);
-                if (score < bestMatch.score) {
-                    bestMatch = { score, character };
-                }
-            });
-            return bestMatch;
-        }
-        
-        // 결과 레이더 차트를 생성하는 함수
-        function generateRadarChart(userScores) {
-            const size = 300;
-            const center = size / 2;
-            const radius = center * 0.8;
-            const labels = ["기질", "내면", "판단", "가면", "개방성"];
-            
-            const getPoints = (scores) => {
-                const points = [];
-                const totalScores = [0, 0, 0, 0, 0];
-                if (!scores || scores.length !== 30) return "";
-                scores.forEach((score, i) => {
-                    const partIndex = Math.floor(i / 6);
-                    totalScores[partIndex] += score;
-                });
-                const maxPartScore = 6 * 5;
-                const minPartScore = 6 * 1;
-                const normalizedScores = totalScores.map(score => (score - minPartScore) / (maxPartScore - minPartScore));
-                
-                normalizedScores.forEach((score, i) => {
-                    const angle = (Math.PI * 2 * i) / 5 - (Math.PI / 2);
-                    const x = center + radius * score * Math.cos(angle);
-                    const y = center + radius * score * Math.sin(angle);
-                    points.push(`${x},${y}`);
-                });
-                return points.join(' ');
-            };
-
-            const userPoints = getPoints(userScores);
-            
-            let axisLines = '', axisLabels = '';
-            for (let i = 0; i < 5; i++) {
-                const angle = (Math.PI * 2 * i) / 5 - (Math.PI / 2);
-                const x2 = center + radius * Math.cos(angle);
-                const y2 = center + radius * Math.sin(angle);
-                axisLines += `<line class="radar-line" x1="${center}" y1="${center}" x2="${x2}" y2="${y2}"></line>`;
-                const lx = center + (radius + 25) * Math.cos(angle);
-                const ly = center + (radius + 25) * Math.sin(angle);
-                axisLabels += `<text class="radar-label" x="${lx}" y="${ly}" dy="5">${labels[i]}</text>`;
-            }
-
-            return `<div class="radar-chart-container mx-auto"><svg class="radar-chart" viewBox="0 0 ${size} ${size}">${axisLines}<polygon class="radar-polygon" points="${userPoints}"></polygon>${axisLabels}</svg></div>`;
-        }
-
-        // 최종 결과 페이지를 생성하고 보여주는 함수
-function calculateAndShowResult() {
-    try {
-        // 캐릭터 데이터가 비어있는 경우 오류 화면 표시
-        if (!Array.isArray(characterData) || characterData.length === 0) {
-            resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
-                <h2 class="text-3xl font-bold text-red-400">오류가 발생했습니다</h2>
-                <p class="text-gray-300">캐릭터 데이터가 로드되지 않았습니다. characterData 변수를 확인해주세요.</p>
-                <button id="restart-btn-error" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
-            </div>`;
-            showScreen('result-screen');
-            document.getElementById('restart-btn-error')?.addEventListener('click', () => location.reload());
-            return;
-        }
-
-        const bestMatch = findBestMatch(userAnswers, characterData);
-
-        // 가장 일치하는 캐릭터를 찾지 못한 경우 오류 화면 표시
-        if (!bestMatch.character) {
-            resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
-                <h2 class="text-3xl font-bold text-red-400">결과 계산 실패</h2>
-                <p class="text-gray-300">유사도 계산 중 오류가 발생했습니다. 답변 또는 캐릭터 점수 데이터를 확인해주세요.</p>
-                <button id="restart-btn-error2" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
-            </div>`;
-            showScreen('result-screen');
-            document.getElementById('restart-btn-error2')?.addEventListener('click', () => location.reload());
-            return;
-        }
-
-        const mainResult = bestMatch.character;
-
-        // 옵셔널 체이닝(?.)과 null 병합 연산자(??)를 사용해 데이터가 없더라도 오류가 나지 않도록 처리
-        const analysis = mainResult.texts?.analysis ?? {};
-        const chemistry = mainResult.texts?.chemistry ?? {
-            romance:    { name: "정보 없음", desc: "데이터가 없습니다." },
-            friendship: { name: "정보 없음", desc: "데이터가 없습니다." },
-            caution:    { name: "정보 없음", desc: "데이터가 없습니다." },
-        };
-        const mentoring = mainResult.texts?.mentoring ?? { role: "정보 없음", desc: "데이터가 없습니다." };
-
-        const maxDiff = 30 * 4; // 30문항 × 최대차이 (5-1=4)
-        const similarityPercentage = Math.max(0, 100 - (bestMatch.score / maxDiff) * 100).toFixed(0);
-
-        const analysisHTML = Object.values(analysis).map(part => `
-            <div class="text-left space-y-2 p-4 border-b border-gray-700 last:border-b-0">
-                <h4 class="text-xl font-semibold text-violet-300">${part?.title ?? "제목 없음"}</h4>
-                <p class="text-gray-300 leading-relaxed">${(part?.desc ?? "내용 없음").replace(/\*\*(.*?)\*\*/g, '<strong class="text-violet-200">$1</strong>')}</p>
-            </div>
-        `).join('');
-
-        resultScreen.innerHTML = `
-            <div class="w-full text-center fade-in space-y-10">
-                <div class="space-y-4">
-                    <h1 class="text-3xl md:text-5xl font-bold text-white tracking-wider" style="text-shadow: 0 0 10px #a78bfa;">당신의 영혼과 가장 닮은 검사는...</h1>
-                    <div class="flex flex-col md:flex-row items-center justify-center gap-8 p-6 rounded-lg result-card">
-                        <img src="${mainResult.image}" alt="${mainResult.name}" class="w-48 h-48 rounded-full border-4 border-violet-400 object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/192x192/0d0c1d/c4b5fd?text=?';">
-                        <div class="text-left space-y-2">
-                            <h2 class="text-4xl font-bold text-violet-300">${mainResult.name}</h2>
-                            <p class="text-xl text-gray-300">${mainResult.type}</p>
-                            <p class="text-lg text-gray-300">성격 일치율: <span class="font-bold text-violet-300">${similarityPercentage}%</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-6 rounded-lg result-card space-y-4">
-                    <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">페르소나 프리즘 심층 분석</h3>
-                    ${generateRadarChart(userAnswers)}
-                    <div class="mt-4">${analysisHTML}</div>
-                </div>
-                <div class="p-6 rounded-lg result-card space-y-4">
-                    <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">관계 케미 분석</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                        <div class="p-4 rounded bg-black bg-opacity-20">
-                            <h4 class="text-xl font-semibold text-red-400">❤️ 연인 케미</h4>
-                            <p class="font-bold mt-1">${chemistry.romance?.name ?? "정보 없음"} 유형</p>
-                            <p class="text-sm text-gray-400 mt-2">${chemistry.romance?.desc ?? "데이터가 없습니다."}</p>
-                        </div>
-                        <div class="p-4 rounded bg-black bg-opacity-20">
-                            <h4 class="text-xl font-semibold text-yellow-400">⭐ 우정 케미</h4>
-                            <p class="font-bold mt-1">${chemistry.friendship?.name ?? "정보 없음"} 유형</p>
-                            <p class="text-sm text-gray-400 mt-2">${chemistry.friendship?.desc ?? "데이터가 없습니다."}</p>
-                        </div>
-                        <div class="p-4 rounded bg-black bg-opacity-20">
-                            <h4 class="text-xl font-semibold text-sky-400">⚠️ 주의 케미</h4>
-                            <p class="font-bold mt-1">${chemistry.caution?.name ?? "정보 없음"} 유형</p>
-                            <p class="text-sm text-gray-400 mt-2">${chemistry.caution?.desc ?? "데이터가 없습니다."}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-6 rounded-lg result-card space-y-4 text-left">
-                    <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2">멘토링 잠재력 분석</h3>
-                    <h4 class="text-xl font-semibold text-violet-300">${mentoring.role}</h4>
-                    <p class="text-gray-300 leading-relaxed">${(mentoring.desc ?? "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-violet-200">$1</strong>')}</p>
-                </div>
-                <div class="mt-8">
-                    <button id="restart-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg">다시 검사하기</button>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('restart-btn')?.addEventListener('click', () => {
-            currentQuestionIndex = 0;
-            userAnswers = [];
-            createPetals();
-            showScreen('start-screen');
-        });
-        showScreen('result-screen');
-    } catch (e) {
-        console.error("결과 렌더링 중 심각한 오류 발생:", e);
-        resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
-            <h2 class="text-3xl font-bold text-red-400">렌더링 중 오류</h2>
-            <p class="text-gray-300">예상치 못한 문제가 발생했습니다. 개발자 콘솔(F12)을 확인해주세요.</p>
-            <button id="restart-btn-error3" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
-        </div>`;
-        showScreen('result-screen');
-        document.getElementById('restart-btn-error3')?.addEventListener('click', () => location.reload());
-    }
+/* ==============================================================
+   STAGE 2: 화면 스위치 & 초기화
+============================================================== */
+function switchScreen(target) {
+  [startScreen, testScreen, loadingScreen, resultScreen].forEach(s => s.classList.remove('active-screen'));
+  target.classList.add('active-screen');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-    resultScreen.innerHTML = `
-      <div class="w-full text-center fade-in space-y-10">
-        <div class="space-y-4">
-          <h1 class="text-3xl md:text-5xl font-bold text-white tracking-wider" style="text-shadow: 0 0 10px #a78bfa;">당신의 영혼과 가장 닮은 검사는...</h1>
-          <div class="flex flex-col md:flex-row items-center justify-center gap-8 p-6 rounded-lg result-card">
-            <img src="${mainResult.image}" alt="${mainResult.name}" class="w-48 h-48 rounded-full border-4 border-violet-400 object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/192x192/0d0c1d/c4b5fd?text=?';">
-            <div class="text-left space-y-2">
-              <h2 class="text-4xl font-bold text-violet-300">${mainResult.name}</h2>
-              <p class="text-xl text-gray-300">${mainResult.type}</p>
-              <p class="text-lg text-gray-300">성격 일치율: <span class="font-bold text-violet-300">${similarityPercentage}%</span></p>
-            </div>
-          </div>
-        </div>
-        <div class="p-6 rounded-lg result-card space-y-4">
-          <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">페르소나 프리즘 심층 분석</h3>
-          ${generateRadarChart(userAnswers)}
-          <div class="mt-4">${analysisHTML}</div>
-        </div>
-        <div class="p-6 rounded-lg result-card space-y-4">
-          <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2 mb-4">관계 케미 분석</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div class="p-4 rounded bg-black bg-opacity-20">
-              <h4 class="text-xl font-semibold text-red-400">❤️ 연인 케미</h4>
-              <p class="font-bold mt-1">${chemistry.romance.name} 유형</p>
-              <p class="text-sm text-gray-400 mt-2">${chemistry.romance.desc}</p>
-            </div>
-            <div class="p-4 rounded bg-black bg-opacity-20">
-              <h4 class="text-xl font-semibold text-yellow-400">⭐ 우정 케미</h4>
-              <p class="font-bold mt-1">${chemistry.friendship.name} 유형</p>
-              <p class="text-sm text-gray-400 mt-2">${chemistry.friendship.desc}</p>
-            </div>
-            <div class="p-4 rounded bg-black bg-opacity-20">
-              <h4 class="text-xl font-semibold text-sky-400">⚠️ 주의 케미</h4>
-              <p class="font-bold mt-1">${chemistry.caution.name} 유형</p>
-              <p class="text-sm text-gray-400 mt-2">${chemistry.caution.desc}</p>
-            </div>
-          </div>
-        </div>
-        <div class="p-6 rounded-lg result-card space-y-4 text-left">
-          <h3 class="text-2xl font-bold border-b-2 border-violet-400 pb-2">멘토링 잠재력 분석</h3>
-          <h4 class="text-xl font-semibold text-violet-300">${mentoring.role}</h4>
-          <p class="text-gray-300 leading-relaxed">${(mentoring.desc ?? "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-violet-200">$1</strong>')}</p>
-        </div>
-        <div class="mt-8">
-          <button id="restart-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg">다시 검사하기</button>
-        </div>
-      </div>
-    `;
+function resetAll() {
+  idx = 0;
+  answers = [];
+  updateProgress(0);
+  scaleBtns.forEach(b => b.classList.remove('selected'));
+  switchScreen(startScreen);
+}
 
-    document.getElementById('restart-btn')?.addEventListener('click', () => {
-      currentQuestionIndex = 0;
-      userAnswers = [];
-      createPetals();
-      showScreen('start-screen');
-    });
-    showScreen('result-screen');
-  } catch (e) {
-    console.error(e);
-    resultScreen.innerHTML = `<div class="w-full text-center fade-in space-y-4 p-8 result-card rounded-lg">
-        <h2 class="text-3xl font-bold text-red-400">렌더링 중 오류</h2>
-        <p class="text-gray-300">예상치 못한 문제가 발생했습니다. 콘솔 로그를 확인해주세요.</p>
-        <button id="restart-btn-error3" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-lg mt-6">처음으로</button>
-    </div>`;
-    showScreen('result-screen');
-    document.getElementById('restart-btn-error3')?.addEventListener('click', () => location.reload());
+/* ==============================================================
+   STAGE 3: 꽃잎(등나무) 이펙트
+============================================================== */
+function spawnWisteriaPetals(count = 50) {
+  petalsLayer.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'wisteria-petal';
+    const size = Math.random() * 10 + 6; // 6~16px
+    p.style.width = `${size}px`;
+    p.style.height = `${size * (Math.random()*0.5 + 0.8)}px`;
+    p.style.left = `${Math.random() * 100}%`;
+    p.style.animationDuration = `${Math.random() * 6 + 6}s`; // 6~12s
+    p.style.animationDelay = `${Math.random() * 6}s`;
+    p.style.opacity = `${Math.random()*0.5 + 0.5}`;
+    petalsLayer.appendChild(p);
   }
 }
 
-        // ==============================================================
-        // STAGE 3: 이벤트 리스너 및 앱 실행
-        // ==============================================================
-        startBtn.addEventListener('click', () => {
-            showScreen('test-screen');
-            currentQuestionIndex = 0;
-            userAnswers = [];
-            showQuestion();
-        });
+/* ==============================================================
+   STAGE 4: 문항 렌더링 & 진행도
+============================================================== */
+function updateProgress(i) {
+  const done = Math.min(i, TOTAL);
+  progressText.textContent = `문항 ${done}/${TOTAL}`;
+  progressBar.style.width = `${(done / TOTAL) * 100}%`;
+}
 
-        scaleBtns.forEach(button => {
-            button.addEventListener('click', () => {
-                const value = parseInt(button.dataset.value);
-                button.classList.add('selected');
-                setTimeout(() => handleChoice(value), 200);
-            });
-        });
-        
-        createPetals();
-        showScreen('start-screen');
-    });
-    </script>
-</body>
-</html>
+function renderQuestion(i) {
+  const q = questions[i];
+  partTitle.textContent = q.part;
+  scenarioText.textContent = q.scenario;
+  beliefAEl.textContent = q.belief_a;
+  beliefBEl.textContent = q.belief_b;
+  q.labels.forEach((lab, j) => labelEls[j].textContent = lab);
 
+  // 이전 선택 하이라이트 제거
+  scaleBtns.forEach(btn => btn.classList.remove('selected'));
+  updateProgress(i);
+}
 
+/* ==============================================================
+   STAGE 5: 선택 처리 & 흐름 제어
+============================================================== */
+function handleChoice(val) {
+  if (locking) return;
+  locking = true;
+
+  // 버튼 하이라이트
+  scaleBtns.forEach(b => {
+    b.classList.toggle('selected', Number(b.dataset.value) === val);
+  });
+
+  answers[idx] = val;
+  setTimeout(() => {
+    idx++;
+    if (idx < TOTAL) {
+      renderQuestion(idx);
+      locking = false;
+    } else {
+      // 종료 -> 로딩 -> 결과
+      showLoadingThenResult();
+    }
+  }, 260);
+}
+
+function showLoadingThenResult() {
+  $('#loading-text').textContent = loadingLines[Math.floor(Math.random()*loadingLines.length)];
+  switchScreen(loadingScreen);
+
+  setTimeout(() => {
+    const result = computeResult(answers);
+    renderResult(result);
+    switchScreen(resultScreen);
+    locking = false;
+  }, 1200);
+}
+
+/* ==============================================================
+   STAGE 6: 매칭 로직
+============================================================== */
+// 문항별 절대차(L1) 합이 최소인 캐릭터 선택
+function computeResult(ans) {
+  const maxDiffPerQ = 4;
+  const maxTotal = maxDiffPerQ * TOTAL;
+
+  const scored = characterData.map(ch => {
+    const diffs = ch.scores.slice(0, TOTAL).map((t, i) => Math.abs((ans[i] || 3) - t));
+    const sumDiff = diffs.reduce((a,b)=>a+b,0);
+    const match = Math.max(0, 1 - (sumDiff / maxTotal)); // 0..1
+    return { ch, sumDiff, match, diffs };
+  }).sort((a,b) => a.sumDiff - b.sumDiff);
+
+  const top3 = scored.slice(0,3);
+  const best = top3[0];
+
+  // 사용자 파트별 평균 (레이더 표시용)
+  const partAverages = [];
+  for (let p=0; p<5; p++) {
+    const start = p*PART_SIZE;
+    const slice = ans.slice(start, start+PART_SIZE);
+    const avg = slice.reduce((a,b)=>a+b,0) / slice.length;
+    partAverages.push(avg); // 1..5
+  }
+
+  return { top3, best, partAverages };
+}
+
+/* ==============================================================
+   STAGE 7: 결과 렌더링
+============================================================== */
+function safe(obj, path, fallback='') {
+  try {
+    return path.split('.').reduce((o,k)=>o && o[k], obj) ?? fallback;
+  } catch { return fallback; }
+}
+
+function renderResult({ top3, best, partAverages }) {
+  const { ch, match } = best;
+  const pct = Math.round(match * 100);
+
+  const ana = ch.texts?.analysis || {};
+  const chem = ch.texts?.chemistry || {};
+  const ment = ch.texts?.mentoring || {};
+
+  const analysisBlocks = ['part1','part2','part3','part4','part5']
+    .map(k => ana[k])
+    .filter(Boolean)
+    .map(a => `
+      <div class="space-y-2">
+        <h3 class="text-xl font-semibold text-violet-200">${a.title}</h3>
+        <p class="text-gray-200 leading-relaxed">${a.desc}</p>
+      </div>
+    `).join('<hr class="border-gray-700">');
+
+  const top3Html = top3.map((t,i)=>`
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-400 w-6">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
+      <img src="${t.ch.image}" alt="${t.ch.name}" class="w-10 h-10 rounded-lg object-cover">
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-gray-100">${t.ch.name}</p>
+        <p class="text-xs text-gray-400">${Math.round(t.match*100)}%</p>
+      </div>
+    </div>
+  `).join('');
+
+  resultScreen.innerHTML = `
+    <div class="w-full p-6 md:p-8 rounded-lg result-card space-y-8">
+      <div class="flex flex-col md:flex-row gap-6 md:gap-8">
+        <img src="${ch.image}" alt="${ch.name}" class="w-full md:w-64 h-56 md:h-64 object-cover rounded-xl shadow-lg">
+        <div class="flex-1 space-y-3">
+          <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-wide">${ch.name}</h2>
+          <p class="text-violet-200 font-semibold">${ch.type}</p>
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-full bg-violet-600/30 text-violet-200 font-bold">매칭률 ${pct}%</span>
+            <span class="px-3 py-1 rounded-full bg-cyan-600/20 text-cyan-100">문항 ${TOTAL}개 기반</span>
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-6 pt-4">
+            <div class="radar-chart-container">
+              <svg id="radar" class="radar-chart"></svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-violet-200 mb-2">멘토링 적합도</h3>
+              <p class="text-gray-100 font-semibold mb-1">${safe(ment, 'role', '—')}</p>
+              <p class="text-gray-300">${safe(ment, 'desc', '설명이 없습니다.')}</p>
+
+              <div class="mt-5">
+                <h3 class="text-lg font-bold text-violet-200 mb-2">궁합</h3>
+                <div class="grid md:grid-cols-3 gap-3">
+                  ${chem.romance ? `
+                    <div class="p-3 rounded-lg bg-white/5 border border-violet-700/40">
+                      <p class="text-sm font-semibold text-pink-200">로맨스</p>
+                      <p class="text-sm text-gray-100">${chem.romance.name}</p>
+                      <p class="text-xs text-gray-300 mt-1">${chem.romance.desc}</p>
+                    </div>` : ''}
+
+                  ${chem.friendship ? `
+                    <div class="p-3 rounded-lg bg-white/5 border border-emerald-700/40">
+                      <p class="text-sm font-semibold text-emerald-200">우정</p>
+                      <p class="text-sm text-gray-100">${chem.friendship.name}</p>
+                      <p class="text-xs text-gray-300 mt-1">${chem.friendship.desc}</p>
+                    </div>` : ''}
+
+                  ${chem.caution ? `
+                    <div class="p-3 rounded-lg bg-white/5 border border-red-700/40">
+                      <p class="text-sm font-semibold text-red-200">주의</p>
+                      <p class="text-sm text-gray-100">${chem.caution.name}</p>
+                      <p class="text-xs text-gray-300 mt-1">${chem.caution.desc}</p>
+                    </div>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-gray-700">
+
+      <div class="grid gap-6">${analysisBlocks}</div>
+
+      <hr class="border-gray-700">
+
+      <div>
+        <h3 class="text-lg font-bold text-violet-200 mb-3">다음 후보</h3>
+        <div class="grid md:grid-cols-3 gap-4">${top3Html}</div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button id="retry-btn" class="btn-primary text-white font-bold py-3 px-6 rounded-full">다시 하기</button>
+      </div>
+    </div>
+  `;
+
+  drawRadar('#radar', partAverages, PART_LABELS);
+  $('#retry-btn').addEventListener('click', resetAll);
+}
+
+/* ==============================================================
+   STAGE 8: 레이더 차트 (SVG)
+============================================================== */
+function polar(cx, cy, r, angleRad) {
+  return [cx + r*Math.cos(angleRad), cy + r*Math.sin(angleRad)];
+}
+
+function drawRadar(svgSel, values1to5, labels) {
+  const svg = document.querySelector(svgSel);
+  const size = 300;
+  const cx = size/2, cy = size/2;
+  const levels = 5;
+  const maxR = size*0.38;
+  const axes = labels.length; // 5
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.innerHTML = '';
+
+  for (let l=1; l<=levels; l++) {
+    const r = (maxR/levels) * l;
+    const pts = [];
+    for (let i=0; i<axes; i++) {
+      const a = (-Math.PI/2) + (i * 2*Math.PI / axes);
+      pts.push(polar(cx, cy, r, a).join(','));
+    }
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts.join(' '));
+    poly.setAttribute('class', 'radar-line');
+    poly.setAttribute('fill', 'none');
+    svg.appendChild(poly);
+  }
+
+  for (let i=0; i<axes; i++) {
+    const a = (-Math.PI/2) + (i * 2*Math.PI / axes);
+    const [x, y] = polar(cx, cy, maxR, a);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x);  line.setAttribute('y2', y);
+    line.setAttribute('class', 'radar-line');
+    svg.appendChild(line);
+
+    const [lx, ly] = polar(cx, cy, maxR + 18, a);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', lx); text.setAttribute('y', ly);
+    text.setAttribute('class', 'radar-label');
+    text.textContent = labels[i];
+    svg.appendChild(text);
+  }
+
+  const pts = [];
+  for (let i=0; i<axes; i++) {
+    const ratio = Math.max(0, Math.min(1, (values1to5[i]-1)/4)); // 1..5 -> 0..1
+    const a = (-Math.PI/2) + (i * 2*Math.PI / axes);
+    pts.push(polar(cx, cy, maxR*ratio, a).join(','));
+  }
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', pts.join(' '));
+  poly.setAttribute('class', 'radar-polygon');
+  svg.appendChild(poly);
+}
+
+/* ==============================================================
+   STAGE 9: 이벤트 바인딩 & 시작
+============================================================== */
+startBtn.addEventListener('click', () => {
+  switchScreen(testScreen);
+  renderQuestion(0);
+});
+
+scaleBtns.forEach(btn => {
+  btn.addEventListener('click', () => handleChoice(Number(btn.dataset.value)));
+});
+
+// 초기화
+spawnWisteriaPetals(60);
+window.addEventListener('resize', () => {
+  const w = Math.min(90, Math.max(40, Math.floor(window.innerWidth / 18)));
+  spawnWisteriaPetals(w);
+});
+resetAll();
